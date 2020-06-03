@@ -1,0 +1,19 @@
+<RCC>
+    <qresource prefix="/icons">
+        <file>src/arrowsalt-focus.png</file>
+        <file>src/arrowsalt-static.png</file>
+        <file>src/cross-focus.png</file>
+        <file>src/cross-static.png</file>
+        <file>src/exit-focus.png</file>
+        <file>src/exit-static.png</file>
+        <file>src/index-focus.png</file>
+        <file>src/index-static.png</file>
+        <file>src/list-focus.png</file>
+        <file>src/list-static.png</file>
+        <file>src/minus-focus.png</file>
+        <file>src/minus-static.png</file>
+        <file>src/queue-focus.png</file>
+        <file>src/queue-static.png</file>
+        <file>src/shrink.png</file>
+    </qresource>
+</RCC>
