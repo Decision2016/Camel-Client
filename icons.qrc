@@ -16,4 +16,30 @@
         <file>src/queue-static.png</file>
         <file>src/shrink.png</file>
     </qresource>
+    <qresource prefix="/ext">
+        <file>src/ext/dir.png</file>
+        <file>src/ext/avi.png</file>
+        <file>src/ext/dll.png</file>
+        <file>src/ext/doc.png</file>
+        <file>src/ext/exe.png</file>
+        <file>src/ext/folder.png</file>
+        <file>src/ext/gif.png</file>
+        <file>src/ext/html.png</file>
+        <file>src/ext/jpg.png</file>
+        <file>src/ext/mkv.png</file>
+        <file>src/ext/mp3.png</file>
+        <file>src/ext/mp4.png</file>
+        <file>src/ext/mpg.png</file>
+        <file>src/ext/other.png</file>
+        <file>src/ext/pdf.png</file>
+        <file>src/ext/png.png</file>
+        <file>src/ext/ppt.png</file>
+        <file>src/ext/psd.png</file>
+        <file>src/ext/rmvb.png</file>
+        <file>src/ext/swf.png</file>
+        <file>src/ext/txt.png</file>
+        <file>src/ext/wav.png</file>
+        <file>src/ext/xls.png</file>
+        <file>src/ext/zip.png</file>
+    </qresource>
 </RCC>

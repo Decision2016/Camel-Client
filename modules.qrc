@@ -1,0 +1,6 @@
+<RCC>
+    <qresource prefix="/modules">
+        <file>fileItem.qml</file>
+        <file>uploadItem.qml</file>
+    </qresource>
+</RCC>

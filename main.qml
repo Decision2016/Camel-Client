@@ -2,6 +2,7 @@ import QtQuick 2.14
 import QtQuick.Window 2.14
 import QtQuick.Controls 2.14
 import QtQuick.Layouts 1.12
+import cn.decision01.modules 1.0
 
 Window {
     id: window
@@ -20,6 +21,10 @@ Window {
         anchors.leftMargin: 0
         anchors.topMargin: 0
         anchors.fill: parent
+
+        CamelClient{
+            id: camelClient
+        }
 
         ColumnLayout {
             id: columnLayout
@@ -289,12 +294,14 @@ Window {
                                 width: 80
                                 height: 20
                                 text: qsTr("")
+                                textFormat: Text.PlainText
+                                selectByMouse: true
                                 verticalAlignment: Text.AlignBottom
                                 Layout.maximumHeight: 40
                                 Layout.minimumHeight: 40
                                 Layout.fillWidth: true
                                 font.pixelSize: 22
-
+                                KeyNavigation.tab: textEdit1
                             }
 
                             Rectangle {
@@ -324,11 +331,13 @@ Window {
                                 width: 80
                                 height: 20
                                 text: qsTr("")
+                                selectByMouse: true
                                 verticalAlignment: Text.AlignBottom
                                 Layout.fillWidth: true
                                 Layout.maximumHeight: 40
                                 Layout.minimumHeight: 40
                                 font.pixelSize: 22
+                                KeyNavigation.tab: button
                             }
 
                             Rectangle {
@@ -348,12 +357,15 @@ Window {
                                 checkable: false
                                 Layout.topMargin: 20
                                 Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
+
+                                onClicked: {
+                                    camelClient.signUser(textEdit.text, textEdit1.text)
+                                }
+
+                                KeyNavigation.tab: textEdit
                             }
 
-
-
                         }
-
 
                     }
 
@@ -370,20 +382,71 @@ Window {
                         font.pixelSize: 50
                     }
 
-
-
-
-
-
                 }
 
                 Item {
-
-                    RowLayout {
-                        id: fileList
+                    ColumnLayout {
+                        id: columnLayout4
                         anchors.fill: parent
-                    }
 
+                        Rectangle {
+                            id: rectangle3
+                            width: 200
+                            height: 200
+                            color: "#ffffff"
+                            Layout.maximumHeight: 50
+                            Layout.minimumHeight: 50
+                            Layout.fillWidth: true
+                        }
+
+                        ScrollView {
+                            id: scroolView
+                            Layout.fillHeight: true
+                            Layout.fillWidth: true
+
+                            GridView {
+                                id: gridView
+                                rightMargin: 20
+                                leftMargin: 20
+                                anchors.fill: parent
+                                cellWidth: 150
+                                cellHeight: 150
+                                model: ListModel {
+                                    ListElement {
+                                        name: "Grey"
+                                        ext: "png"
+                                        colorCode: "grey"
+                                    }
+                                }
+                                delegate: Item {
+                                    x: 5
+                                    height: 50
+                                    Column {
+                                        spacing: 5
+                                        Rectangle {
+                                            width: 100
+                                            height: 100
+                                            color: "ghostwhite"
+                                            anchors.horizontalCenter: parent.horizontalCenter
+
+                                            Image {
+                                                source: "qrc:/ext/src/ext/" + ext + ".png"
+                                                anchors.fill: parent
+                                            }
+                                        }
+
+                                        Text {
+                                            x: 5
+                                            text: name
+                                            font.bold: true
+                                            anchors.horizontalCenter: parent.horizontalCenter
+                                        }
+
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
 
                 Item {
@@ -392,15 +455,13 @@ Window {
                         anchors.fill: parent
                     }
                 }
-
-
             }
-
-
         }
     }
 }
 
-
-
-
+/*##^##
+Designer {
+    D{i:35;anchors_height:629;anchors_width:1094}D{i:32;anchors_height:100;anchors_width:100;anchors_x:0;anchors_y:0}
+}
+##^##*/

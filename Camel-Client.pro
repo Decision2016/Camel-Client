@@ -20,7 +20,8 @@ SOURCES += \
         transporter.cpp
 
 RESOURCES += qml.qrc \
-    icons.qrc
+    icons.qrc \
+    modules.qrc
 
 # Additional import path used to resolve QML modules in Qt Creator's code model
 QML_IMPORT_PATH =
@@ -43,3 +44,10 @@ HEADERS += \
     camel_client.h \
     connectmanager.h \
     transporter.h
+
+INCLUDEPATH += $$quote(C:/Program Files (x86)/OpenSSL-Win32/include)
+
+LIBS +=$$quote(C:/Program Files (x86)/OpenSSL-Win32/lib/libcrypto.lib)
+LIBS +=$$quote(C:/Program Files (x86)/OpenSSL-Win32/lib/libssl.lib)
+
+LIBS += -lWs2_32
