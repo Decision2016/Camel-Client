@@ -34,7 +34,7 @@ private:
     AES_KEY aesKey;
     SOCKET client_socket;
     unsigned char token[32], key[32], iv[16];
-    int loginPort;
+    int loginPort, filePort;
     bool firstConnect = false;
     long long lastTimestamp;
 

@@ -16,6 +16,20 @@ Window {
     minimumHeight: 741
     flags: Qt.Window | Qt.CustomizeWindowHint
 
+    ListModel {
+        id: fileList
+    }
+
+    CamelClient{
+        id: camelClient
+        onLoginSuccess: {
+            hasLogin = true
+            stackLayout.currentIndex = 1
+            columnLayout2.nowObj = 1
+            getList()
+        }
+    }
+
     RowLayout {
         id: rowLayout
         anchors.rightMargin: 0
@@ -23,18 +37,6 @@ Window {
         anchors.leftMargin: 0
         anchors.topMargin: 0
         anchors.fill: parent
-
-        CamelClient{
-            id: camelClient
-            onLoginSuccess: {
-                hasLogin = true
-                stackLayout.currentIndex = 1
-                gridView.model = {
-
-                }
-                gridView.getList()
-            }
-        }
 
         ColumnLayout {
             id: columnLayout
@@ -395,18 +397,33 @@ Window {
                 }
 
                 Item {
+
                     ColumnLayout {
                         id: columnLayout4
                         anchors.fill: parent
 
-                        Rectangle {
-                            id: rectangle3
-                            width: 200
-                            height: 200
-                            color: "#ffffff"
+                        RowLayout {
+                            id: rowLayout3
+                            width: 100
+                            height: 100
                             Layout.maximumHeight: 50
                             Layout.minimumHeight: 50
                             Layout.fillWidth: true
+
+                            Button {
+                                id: button1
+                                text: qsTr("upload")
+                            }
+
+                            Button {
+                                id: button2
+                                text: qsTr("newdir")
+                            }
+
+                            Button {
+                                id: button3
+                                text: qsTr("refresh")
+                            }
                         }
 
                         ScrollView {
@@ -416,19 +433,14 @@ Window {
 
                             GridView {
                                 id: gridView
+                                topMargin: 20
                                 objectName: "gridView"
                                 rightMargin: 20
                                 leftMargin: 20
                                 anchors.fill: parent
                                 cellWidth: 150
                                 cellHeight: 150
-                                model: ListModel {
-                                    ListElement {
-                                        name: "Grey"
-                                        ext: "png"
-                                        colorCode: "grey"
-                                    }
-                                }
+                                model: fileList
                                 delegate: Item {
                                     x: 5
                                     height: 50
@@ -441,7 +453,6 @@ Window {
                                             anchors.horizontalCenter: parent.horizontalCenter
 
                                             Image {
-
                                                 source: "qrc:/ext/src/ext/" + ext + ".png"
                                                 anchors.fill: parent
                                             }
@@ -450,20 +461,21 @@ Window {
                                         Text {
                                             x: 5
                                             text: name
+                                            horizontalAlignment: Text.AlignHCenter
+                                            elide: Text.ElideRight
                                             font.bold: true
+                                            width: 120
                                             anchors.horizontalCenter: parent.horizontalCenter
                                         }
 
                                     }
                                 }
-
-                                function getList() {
-                                    var infoString = camelClient.getDirInfo();
-                                    console.log(infoString)
-                                }
                             }
                         }
+
+
                     }
+
                 }
 
                 Item {
@@ -475,11 +487,31 @@ Window {
             }
         }
     }
+
+    /*
+     *此处开始用于编写全局函数
+     */
+
+    function getList() {
+        var infoString = String(camelClient.getDirInfo())
+        var list = infoString.split(';')
+        console.log(list)
+        console.log(list.length)
+        for (var i = 0; i < list.length - 1; i++) {
+            var obj = list[i].split('/')
+            fileList.append({
+                                "ext": checkExtName(obj[0]),
+                                "name": obj[1]
+                            })
+        }
+    }
+
+    function checkExtName(extName) {
+        var extArray = ["avi", "dir", "dll", "doc", "exe", "gif", "html", "jpg", "mkv", "mp3", "mp4", "mpg", "pdf", "png", "ppt",  "psd", "rmvb", "swf", "txt", "wav", "xls", "zip"]
+        if (extName in extArray) return extName
+        return "other"
+    }
 }
 
 
-/*##^##
-Designer {
-    D{i:35;anchors_height:629;anchors_width:1094}D{i:32;anchors_height:100;anchors_width:100;anchors_x:0;anchors_y:0}
-}
-##^##*/
+

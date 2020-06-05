@@ -8,6 +8,7 @@ camel_client::camel_client() {
 camel_client::~camel_client() {
     RSA_free(server_key);
     RSA_free(client_key);
+    closesocket(client_socket);
 }
 
 void camel_client::signUser(QString username, QString password) {
@@ -74,8 +75,10 @@ void camel_client::signUser(QString username, QString password) {
         if (n != -1) {
             getStatusCode(statusCode, recv_buffer);
             if (statusCode == 112) {
-                aesDecrypt((unsigned char*)&recv_buffer[2], (unsigned char*)buffer, 32);
-                setToken(buffer);
+                aesDecrypt((unsigned char*)&recv_buffer[2], (unsigned char*)buffer, 34);
+                filePort = (int)(unsigned char) buffer[0];
+                filePort = (filePort << 8) | (int)(unsigned char) buffer[1];
+                setToken(&buffer[2]);
                 client_socket = clientSocket;
                 loginSuccess();
             }
