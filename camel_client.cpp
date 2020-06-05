@@ -59,7 +59,7 @@ void camel_client::signUser(QString username, QString password) {
     SHA256_Update(&sha256, buffer, 302);
     SHA256_Final(hash, &sha256);
     memcpy(&buffer[32], hash, SHA256_DIGEST_LENGTH);
-    AES_set_encrypt_key(hash, 256, &aesKey);
+    memcpy(key, hash, 32);
 
     int result = RSA_public_encrypt(64,(unsigned char*) buffer, (unsigned char*)&send_buffer[2], server_key, RSA_PKCS1_PADDING);
     if (result < 0) {
@@ -74,10 +74,10 @@ void camel_client::signUser(QString username, QString password) {
         if (n != -1) {
             getStatusCode(statusCode, recv_buffer);
             if (statusCode == 112) {
-                AES_decrypt((unsigned char*)&recv_buffer[2], (unsigned char*)buffer, &aesKey);
+                aesDecrypt((unsigned char*)&recv_buffer[2], (unsigned char*)buffer, 32);
                 setToken(buffer);
                 client_socket = clientSocket;
-                qDebug() << "Login successful!";
+                loginSuccess();
             }
             break;
         }
@@ -126,13 +126,52 @@ void camel_client::fnFirstConnect() {
                 qDebug() << loginPort;
                 const unsigned char* rsa_start = (unsigned char*)&recv_buffer[4];
                 server_key = d2i_RSAPublicKey(nullptr, &rsa_start, 270);
-                // notice info
-                qDebug() << "first Connect Finished!";
+                client_socket = clientSocket;
             }
             break;
         }
     }
-    closesocket(clientSocket);
+}
+
+QString camel_client::getDirInfo() {
+    std::string dirInfo;
+    char send_buffer[4096], recv_buffer[4096], buffer[4096];
+    int length, cipherLength = 0, statusCode;
+    memset(recv_buffer, 0, sizeof (recv_buffer));
+    dirInfo.clear();
+    setStatusCode(200, send_buffer);
+    setBufferToken(&send_buffer[2]);
+    send(client_socket, send_buffer, 34, 0);
+    clickTime();
+    while (true) {
+        qDebug()<<"recv";
+        length = recv(client_socket, recv_buffer, 4096, 0);
+        if (length == -1) {
+            if (checkTimeout(10)) break;
+            continue;
+        }
+        clickTime();
+        getStatusCode(statusCode, recv_buffer);
+        if (statusCode == 504) break;
+        if (statusCode != 100) continue;
+        cipherLength = (int)(unsigned char) recv_buffer[2];
+        cipherLength = (cipherLength << 8) | (int)(unsigned char) recv_buffer[3];
+
+        memset(buffer, 0, sizeof (buffer));
+        aesDecrypt((unsigned char*)&recv_buffer[4], (unsigned char*)buffer, cipherLength);
+        for (int i = 0; i < cipherLength; i++) {
+            dirInfo.push_back(buffer[i]);
+        }
+
+        setStatusCode(402, send_buffer);
+        send(client_socket, send_buffer, 2, 0);
+    }
+
+    return QString::fromStdString(dirInfo);
+}
+
+void camel_client::setBufferToken(char *buffer) {
+    memcpy(buffer, token, 32);
 }
 
 bool camel_client::vaildUser(QString &username, QString &password) {
@@ -163,4 +202,29 @@ bool camel_client::checkSign(const char *_buffer) {
 
 void camel_client::setToken(char *buffer) {
     memcpy(token, buffer, 32);
+}
+
+void camel_client::clearIv() {
+    memset(iv, 0, 16);
+}
+
+void camel_client::aesEncrypt(const unsigned char *in, unsigned char *out, int len) {
+    clearIv();
+    AES_set_encrypt_key(key, 256, &aesKey);
+    AES_cbc_encrypt(in, out, len, &aesKey, iv, AES_ENCRYPT);
+}
+
+void camel_client::aesDecrypt(const unsigned char *in, unsigned char *out, int len) {
+    clearIv();
+    AES_set_decrypt_key(key, 256, &aesKey);
+    AES_cbc_encrypt(in, out, len, &aesKey, iv, AES_DECRYPT);
+}
+
+bool camel_client::checkTimeout(long long timeLimit) {
+    long long delta = time(nullptr) - lastTimestamp;
+    return delta >= timeLimit;
+}
+
+void camel_client::clickTime() {
+    lastTimestamp = time(nullptr);
 }

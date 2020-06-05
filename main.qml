@@ -5,6 +5,8 @@ import QtQuick.Layouts 1.12
 import cn.decision01.modules 1.0
 
 Window {
+    property bool hasLogin: false
+
     id: window
     visible: true
     color : "ghostwhite"
@@ -24,6 +26,14 @@ Window {
 
         CamelClient{
             id: camelClient
+            onLoginSuccess: {
+                hasLogin = true
+                stackLayout.currentIndex = 1
+                gridView.model = {
+
+                }
+                gridView.getList()
+            }
         }
 
         ColumnLayout {
@@ -250,7 +260,7 @@ Window {
                 id: stackLayout
                 width: 100
                 height: 100
-                currentIndex: 1
+                currentIndex: 0
 
                 Item {
                     id: element2
@@ -406,6 +416,7 @@ Window {
 
                             GridView {
                                 id: gridView
+                                objectName: "gridView"
                                 rightMargin: 20
                                 leftMargin: 20
                                 anchors.fill: parent
@@ -430,6 +441,7 @@ Window {
                                             anchors.horizontalCenter: parent.horizontalCenter
 
                                             Image {
+
                                                 source: "qrc:/ext/src/ext/" + ext + ".png"
                                                 anchors.fill: parent
                                             }
@@ -443,6 +455,11 @@ Window {
                                         }
 
                                     }
+                                }
+
+                                function getList() {
+                                    var infoString = camelClient.getDirInfo();
+                                    console.log(infoString)
                                 }
                             }
                         }
@@ -459,6 +476,7 @@ Window {
         }
     }
 }
+
 
 /*##^##
 Designer {
