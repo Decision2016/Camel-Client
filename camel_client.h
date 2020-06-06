@@ -15,6 +15,7 @@
 #include <openssl/aes.h>
 #include <openssl/rand.h>
 #include <openssl/err.h>
+#include "filemanager.h"
 
 static const int MAX_TIME_WAITING = 300;
 
@@ -27,16 +28,24 @@ public:
 public slots:
     void signUser(QString username, QString password);
     QString getDirInfo();
+    void createDirectory(QString _dirName);
+    // bool deleteDirectory(QString _dirName);
+    // bool openDirectory(QString _dirName);
 signals:
     void loginSuccess();
+    void createDirSuccess();
+    void createDirError();
 private:
     RSA *server_key, *client_key;
     AES_KEY aesKey;
     SOCKET client_socket;
+    FileManager *fm = nullptr;
     unsigned char token[32], key[32], iv[16];
     int loginPort, filePort;
     bool firstConnect = false;
     long long lastTimestamp;
+
+
 
     bool vaildUser(QString &username, QString &password);
     void fnFirstConnect();

@@ -9,6 +9,10 @@ camel_client::~camel_client() {
     RSA_free(server_key);
     RSA_free(client_key);
     closesocket(client_socket);
+
+    if (! fm) {
+        delete fm;
+    }
 }
 
 void camel_client::signUser(QString username, QString password) {
@@ -80,6 +84,7 @@ void camel_client::signUser(QString username, QString password) {
                 filePort = (filePort << 8) | (int)(unsigned char) buffer[1];
                 setToken(&buffer[2]);
                 client_socket = clientSocket;
+                fm = new FileManager(clientSocket, token, key);
                 loginSuccess();
             }
             break;
@@ -117,7 +122,7 @@ void camel_client::fnFirstConnect() {
     setStatusCode(210, send_buffer);
     send(clientSocket, send_buffer, 2, 0);
     int statusCode;
-    while (1) {
+    while (true) {
         n = recv(clientSocket, recv_buffer, 4096, 0);
         if (n != -1) {
             getStatusCode(statusCode, recv_buffer);
@@ -143,7 +148,7 @@ QString camel_client::getDirInfo() {
     memset(recv_buffer, 0, sizeof (recv_buffer));
     dirInfo.clear();
     setStatusCode(200, send_buffer);
-    setBufferToken(&send_buffer[2]);
+    aesEncrypt(token, (unsigned char*)&send_buffer[2], 32);
     send(client_socket, send_buffer, 34, 0);
     clickTime();
     while (true) {
@@ -230,4 +235,9 @@ bool camel_client::checkTimeout(long long timeLimit) {
 
 void camel_client::clickTime() {
     lastTimestamp = time(nullptr);
+}
+
+void camel_client::createDirectory(QString _dirName) {
+    if(fm -> createDirectory(_dirName)) createDirSuccess();
+    else createDirError();
 }

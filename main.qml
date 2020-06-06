@@ -2,10 +2,13 @@ import QtQuick 2.14
 import QtQuick.Window 2.14
 import QtQuick.Controls 2.14
 import QtQuick.Layouts 1.12
+import QtQuick.VirtualKeyboard 2.14
 import cn.decision01.modules 1.0
 
 Window {
     property bool hasLogin: false
+    property int stackIndex: 0
+    property int editIndex: -1
 
     id: window
     visible: true
@@ -18,15 +21,26 @@ Window {
 
     ListModel {
         id: fileList
+
+        ListElement {
+           infoType: "folder"
+           ext: "folder"
+           name: "test.png"
+        }
     }
 
     CamelClient{
         id: camelClient
         onLoginSuccess: {
             hasLogin = true
-            stackLayout.currentIndex = 1
+            stackIndex = 1
             columnLayout2.nowObj = 1
             getList()
+        }
+
+        onCreateDirSuccess: {
+            refresh();
+            editIndex = -1
         }
     }
 
@@ -262,7 +276,7 @@ Window {
                 id: stackLayout
                 width: 100
                 height: 100
-                currentIndex: 0
+                currentIndex: stackIndex
 
                 Item {
                     id: element2
@@ -313,7 +327,7 @@ Window {
                                 Layout.minimumHeight: 40
                                 Layout.fillWidth: true
                                 font.pixelSize: 22
-                                KeyNavigation.tab: textEdit1
+                                activeFocusOnTab: true
                             }
 
                             Rectangle {
@@ -349,7 +363,7 @@ Window {
                                 Layout.maximumHeight: 40
                                 Layout.minimumHeight: 40
                                 font.pixelSize: 22
-                                KeyNavigation.tab: button
+                                activeFocusOnTab: true
                             }
 
                             Rectangle {
@@ -397,6 +411,7 @@ Window {
                 }
 
                 Item {
+                    id: element4
 
                     ColumnLayout {
                         id: columnLayout4
@@ -406,6 +421,7 @@ Window {
                             id: rowLayout3
                             width: 100
                             height: 100
+                            Layout.fillHeight: true
                             Layout.maximumHeight: 50
                             Layout.minimumHeight: 50
                             Layout.fillWidth: true
@@ -418,11 +434,24 @@ Window {
                             Button {
                                 id: button2
                                 text: qsTr("newdir")
+
+                                onClicked: {
+                                    editIndex = fileList.count
+                                    fileList.append({
+                                                        "infoType": "folder",
+                                                        "ext": "folder",
+                                                        "name": ""
+                                                    })
+                                }
                             }
 
                             Button {
                                 id: button3
                                 text: qsTr("refresh")
+
+                                onClicked: {
+                                    refresh()
+                                }
                             }
                         }
 
@@ -440,54 +469,264 @@ Window {
                                 anchors.fill: parent
                                 cellWidth: 150
                                 cellHeight: 150
+                                highlightFollowsCurrentItem: true
+                                focus: true
                                 model: fileList
-                                delegate: Item {
-                                    x: 5
-                                    height: 50
-                                    Column {
-                                        spacing: 5
-                                        Rectangle {
-                                            width: 100
-                                            height: 100
-                                            color: "ghostwhite"
-                                            anchors.horizontalCenter: parent.horizontalCenter
+                                currentIndex: -1
+                                delegate: Component {
+                                    id: baseListDelegate
+                                    Item {
+                                        id: itemView
+                                        width: 120
+                                        height: 125
+                                        MouseArea{
+                                            anchors.fill: parent
+                                            acceptedButtons: Qt.LeftButton | Qt.RightButton
+                                            onClicked: {
+                                                switch (mouse.button) {
+                                                case Qt.LeftButton :
+                                                    gridView.currentIndex = index
+                                                    break
+                                                case Qt.RightButton :
+                                                    if (infoType === "folder") {
+                                                        dirMenu.popup()
+                                                    }
+                                                    else {
+                                                        fileMenu.popup()
+                                                    }
 
-                                            Image {
-                                                source: "qrc:/ext/src/ext/" + ext + ".png"
-                                                anchors.fill: parent
+                                                    break
+                                                }
+                                            }
+
+                                            Menu {
+                                                id: fileMenu
+                                                MenuItem {
+                                                    text: "下载"
+                                                }
+                                                MenuItem {
+                                                    text: "删除"
+                                                }
+                                                MenuItem {
+                                                    text: "重命名"
+                                                }
+                                            }
+
+                                            Menu {
+                                                id: dirMenu
+                                                MenuItem {
+                                                    text: "删除"
+                                                }
+                                                MenuItem {
+                                                    text: "重命名"
+                                                }
                                             }
                                         }
 
-                                        Text {
-                                            x: 5
-                                            text: name
-                                            horizontalAlignment: Text.AlignHCenter
-                                            elide: Text.ElideRight
-                                            font.bold: true
-                                            width: 120
-                                            anchors.horizontalCenter: parent.horizontalCenter
-                                        }
+                                        Column {
+                                            spacing: 5
+                                            Rectangle {
+                                                width: 100
+                                                height: 100
+                                                color: "transparent"
+                                                anchors.horizontalCenter: parent.horizontalCenter
+                                                Image {
+                                                    mipmap: true
+                                                    source: "qrc:/ext/src/ext/" + ext + ".png"
+                                                    anchors.fill: parent
+                                                }
 
+
+                                            }
+
+                                            Text {
+                                                visible: editIndex != index
+                                                x: 5
+                                                text: name
+                                                horizontalAlignment: Text.AlignHCenter
+                                                elide: Text.ElideRight
+                                                font.bold: true
+                                                width: 120
+                                                anchors.horizontalCenter: parent.horizontalCenter
+                                            }
+
+                                            TextInput {
+                                                id: dirNameInput
+                                                visible: editIndex == index
+                                                width: 120
+                                                Keys.onReleased: {
+                                                    if(event.key !== Qt.Key_Return || text.length <= 0) return ;
+                                                    camelClient.createDirectory(text)
+                                                }
+                                            }
+                                        }
                                     }
+                                }
+
+                                highlight: Component {
+                                    Rectangle {
+                                        radius: 5
+                                        opacity: 0.3
+                                        color: "dodgerblue"
+                                    }
+                                }
+
+                                flickableChildren: MouseArea {
+                                    anchors.fill: parent
+                                    onClicked: gridView.currentIndex = -1
                                 }
                             }
                         }
+                    }
 
+                    BusyIndicator {
+                        id: busyIndicator
+                        x: 0
+                        y: 625
+                        visible: false
 
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        anchors.verticalCenter: parent.verticalCenter
                     }
 
                 }
 
                 Item {
-                    RowLayout {
-                        id: uploadList
+                    Layout.fillHeight: true
+                    Layout.fillWidth: true
+                    ColumnLayout {
+                        id: columnLayout5
                         anchors.fill: parent
+
+                        RowLayout {
+                            id: rowLayout4
+                            width: 100
+                            height: 100
+                            Layout.maximumHeight: 50
+                            Layout.fillWidth: true
+                            Layout.minimumHeight: 50
+
+                            Button {
+                                id: button4
+                                text: qsTr("Button")
+                            }
+
+                            Button {
+                                id: button5
+                                text: qsTr("Button")
+                            }
+                        }
+
+                        ScrollView {
+                            id: scrollView
+                            topPadding: 20
+                            rightPadding: 20
+                            leftPadding: 20
+                            Layout.fillHeight: true
+                            Layout.fillWidth: true
+
+                            ListView {
+                                id: listView
+                                clip: true
+                                orientation: ListView.Vertical
+                                delegate: Item {
+                                    id: element5
+                                    height: 70
+                                    anchors.left: parent.left
+                                    anchors.leftMargin: 0
+                                    anchors.right: parent.right
+                                    anchors.rightMargin: 0
+
+                                    Row {
+                                        id: rowView
+                                        spacing: 20
+                                        anchors.left: parent.left
+                                        anchors.leftMargin: 0
+                                        anchors.right: parent.right
+                                        anchors.rightMargin: 0
+
+                                        Image {
+                                            mipmap: true
+                                            width: 60
+                                            height: 60
+                                            id: imgView
+                                            source: "qrc:/ext/src/ext/png.png"
+                                        }
+
+                                        Column {
+                                            id: column
+                                            anchors.right: buttonsRow.right
+                                            anchors.rightMargin: 120
+                                            anchors.left: imgView.left
+                                            anchors.leftMargin: 70
+
+                                            Text {
+                                                text: rowView.width
+                                                bottomPadding: 10
+                                                topPadding: 10
+                                                verticalAlignment: Text.AlignVCenter
+                                            }
+
+                                            ProgressBar {
+                                                id: progressbar
+                                                value: 30
+                                                to: 100
+                                                anchors.right: parent.right
+                                                anchors.rightMargin: 0
+                                                anchors.left: parent.left
+                                                anchors.leftMargin: 0
+
+                                                contentItem: Item {
+                                                        implicitWidth: parent.width
+                                                        implicitHeight: parent.height
+
+                                                        Rectangle {
+                                                            width: parent.width * progressbar.visualPosition
+                                                            height: parent.height
+                                                            radius: 5
+                                                            color: "#17a81a"
+                                                        }
+                                                 }
+                                            }
+                                        }
+                                        Row {
+                                            id: buttonsRow
+                                            anchors.right: parent.right
+                                            anchors.rightMargin: 0
+                                            spacing: 5
+                                            RoundButton {
+                                                width: 30
+                                                height: 30
+                                                anchors.verticalCenter: parent.verticalCenter
+
+                                            }
+
+                                            RoundButton {
+                                                width: 30
+                                                height: 30
+                                                anchors.verticalCenter: parent.verticalCenter
+
+                                            }
+
+                                            RoundButton {
+                                                width: 30
+                                                height: 30
+                                                anchors.verticalCenter: parent.verticalCenter
+
+                                            }
+                                        }
+                                    }
+                                }
+                                model: ListModel {
+
+                                }
+                            }
+                        }
                     }
                 }
             }
         }
     }
-
     /*
      *此处开始用于编写全局函数
      */
@@ -495,23 +734,27 @@ Window {
     function getList() {
         var infoString = String(camelClient.getDirInfo())
         var list = infoString.split(';')
-        console.log(list)
-        console.log(list.length)
         for (var i = 0; i < list.length - 1; i++) {
             var obj = list[i].split('/')
             fileList.append({
-                                "ext": checkExtName(obj[0]),
-                                "name": obj[1]
+                                "infoType": obj[0] === "0" ? "folder" : "file",
+                                "ext": checkExtName(obj[0], obj[1]),
+                                "name": obj[2]
                             })
         }
     }
 
-    function checkExtName(extName) {
+    function checkExtName(type, extName) {
         var extArray = ["avi", "dir", "dll", "doc", "exe", "gif", "html", "jpg", "mkv", "mp3", "mp4", "mpg", "pdf", "png", "ppt",  "psd", "rmvb", "swf", "txt", "wav", "xls", "zip"]
-        if (extName in extArray) return extName
+        if (extArray.indexOf(extName) !== -1) return extName
+        else if(type === "0" && extName === "folder") return "folder";
         return "other"
     }
-}
 
+    function refresh() {
+        fileList.clear()
+        getList()
+    }
+}
 
 

@@ -16,7 +16,9 @@ DEFINES += QT_DEPRECATED_WARNINGS
 SOURCES += \
         camel_client.cpp \
         connectmanager.cpp \
+        filemanager.cpp \
         main.cpp \
+        task.cpp \
         transporter.cpp
 
 RESOURCES += qml.qrc \
@@ -43,6 +45,9 @@ DISTFILES += \
 HEADERS += \
     camel_client.h \
     connectmanager.h \
+    constants.h \
+    filemanager.h \
+    task.h \
     transporter.h
 
 INCLUDEPATH += $$quote(C:/Program Files (x86)/OpenSSL-Win32/include)
