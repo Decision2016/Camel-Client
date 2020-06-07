@@ -19,6 +19,7 @@ SOURCES += \
         filemanager.cpp \
         main.cpp \
         task.cpp \
+        taskqueue.cpp \
         transporter.cpp
 
 RESOURCES += qml.qrc \
@@ -48,6 +49,7 @@ HEADERS += \
     constants.h \
     filemanager.h \
     task.h \
+    taskqueue.h \
     transporter.h
 
 INCLUDEPATH += $$quote(C:/Program Files (x86)/OpenSSL-Win32/include)

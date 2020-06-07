@@ -10,19 +10,9 @@ bool FileManager::createDirectory(QString _dirName) {
      * 创建过程中可能存在文件名空格问题
      * 后续调试进行解决
      */
-    std::string dirName = _dirName.toStdString();
-    clearBuffer();
-    int length = dirName.length();
     long long statusCode;
-
-    pushValue((unsigned char*) send_buffer, CREATE_DIR, 2);
-    aesEncrypt(token,(unsigned char*) &send_buffer[2], TOKEN_LENGTH);
-
-    pushValue((unsigned char*) &send_buffer[34], length, 2);
-    memcpy(buffer, dirName.c_str(), length);
-    aesEncrypt((unsigned char*)buffer, (unsigned char*) &send_buffer[36], length);
-
-    send(client_socket, send_buffer, BUFFER_LENGTH, 0);
+    int length;
+    sendDirInfo(CREATE_DIR, _dirName);
 
     while (true) {
         length = recv(client_socket, recv_buffer, BUFFER_LENGTH, 0);
@@ -32,6 +22,90 @@ bool FileManager::createDirectory(QString _dirName) {
         }
         popValue((unsigned char*)recv_buffer, statusCode, 2);
         if (statusCode != SERVER_DIR_CREATED) return false;
+        else break;
+    }
+    return true;
+}
+
+bool FileManager::deleteDirectory(QString _dirName) {
+    long long statusCode;
+    int length;
+    sendDirInfo(DELETE_DIR, _dirName);
+
+    while (true) {
+        length = recv(client_socket, recv_buffer, BUFFER_LENGTH, 0);
+        if (length == -1) {
+            // todo: 超时检测
+            continue;
+        }
+        popValue((unsigned char*)recv_buffer, statusCode, 2);
+        if (statusCode != SERVER_DELETE) return false;
+        else break;
+    }
+    return true;
+}
+
+bool FileManager::openDirectory(QString _dirName) {
+    long long statusCode;
+    int length;
+    sendDirInfo(ENTER_DIR, _dirName);
+
+    while (true) {
+        length = recv(client_socket, recv_buffer, BUFFER_LENGTH, 0);
+        if (length == -1) {
+            // todo: 超时检测
+            continue;
+        }
+        popValue((unsigned char*)recv_buffer, statusCode, 2);
+        if (statusCode != SERVER_DIR_INFO) return false;
+        else break;
+    }
+    return true;
+}
+
+bool FileManager::backupDirectory() {
+    long long statusCode;
+    int length;
+    clearBuffer();
+    pushValue((unsigned char*) send_buffer, BACKUP_DIR, 2);
+    aesEncrypt(token, (unsigned char*) &send_buffer[2], TOKEN_LENGTH);
+
+    send(client_socket, send_buffer, 34, 0);
+
+    while (true) {
+        length = recv(client_socket, recv_buffer, BUFFER_LENGTH, 0);
+        if (length == -1) {
+            // todo: 超时检测
+            continue;
+        }
+        popValue((unsigned char*)recv_buffer, statusCode, 2);
+        if (statusCode != SERVER_DIR_INFO) return false;
+        else break;
+    }
+    return true;
+}
+
+
+bool FileManager::rename(QString &_originName, QString &_newName) {
+    std::string nameData = _originName.toStdString() + "/" + _newName.toStdString();
+    long long statusCode;
+    int length = nameData.length();
+    clearBuffer();
+
+    pushValue((unsigned char*) &send_buffer, RENAME_DIR_FILE, 2);
+    aesEncrypt(token, (unsigned char*) &send_buffer[2], TOKEN_LENGTH);
+    pushValue((unsigned char*) &send_buffer[34], length, 2);
+    aesEncrypt((unsigned char*)nameData.c_str(), (unsigned char*)&send_buffer[36], length);
+
+    send(client_socket, send_buffer, BUFFER_LENGTH, 0);
+
+    while (true) {
+        length = recv(client_socket, recv_buffer, BUFFER_LENGTH, 0);
+        if (length == -1) {
+            continue;
+        }
+        popValue((unsigned char*)recv_buffer, statusCode, 2);
+        if (statusCode != SERVER_RENAME) return false;
         else break;
     }
     return true;
@@ -76,4 +150,19 @@ void FileManager::popValue(const unsigned char *buffer, long long &value, const 
         value <<= 8;
         value |= buffer[i];
     }
+}
+
+void FileManager::sendDirInfo(const int &statusCode, QString _dirName) {
+    std::string dirName = _dirName.toStdString();
+    clearBuffer();
+    int length = dirName.length();
+
+    pushValue((unsigned char*) send_buffer, statusCode, 2);
+    aesEncrypt(token, (unsigned char*) &send_buffer[2], TOKEN_LENGTH);
+
+    pushValue((unsigned char*) &send_buffer[34], length, 2);
+    memcpy(buffer, dirName.c_str(), length);
+    aesEncrypt((unsigned char*)buffer, (unsigned char*) &send_buffer[36], length);
+
+    send(client_socket, send_buffer, BUFFER_LENGTH, 0);
 }

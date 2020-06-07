@@ -241,3 +241,24 @@ void camel_client::createDirectory(QString _dirName) {
     if(fm -> createDirectory(_dirName)) createDirSuccess();
     else createDirError();
 }
+
+void camel_client::deleteDirectory(QString _dirName) {
+    if (fm -> deleteDirectory(_dirName)) deleteDirSuccess();
+    else deleteDirError();
+}
+
+void camel_client::openDirectory(QString _dirName) {
+    if (fm -> openDirectory(_dirName)) enterDirSuccess();
+    else enterDirError();
+}
+
+void camel_client::backupDirectory() {
+    if (fm -> backupDirectory()) backupSuccess();
+    else backupError();
+}
+
+
+void camel_client::rename(QString _originName, QString _newName) {
+    if (fm -> rename(_originName, _newName)) renameSuccess();
+    else renameError();
+}

@@ -9,6 +9,8 @@ Window {
     property bool hasLogin: false
     property int stackIndex: 0
     property int editIndex: -1
+    property int dirLevel: 0
+    property bool newDir: false
 
     id: window
     visible: true
@@ -27,6 +29,12 @@ Window {
            ext: "folder"
            name: "test.png"
         }
+
+        ListElement {
+           infoType: "folder"
+           ext: "folder"
+           name: "test.png"
+        }
     }
 
     CamelClient{
@@ -35,12 +43,32 @@ Window {
             hasLogin = true
             stackIndex = 1
             columnLayout2.nowObj = 1
-            getList()
+            refresh()
         }
 
         onCreateDirSuccess: {
-            refresh();
+            refresh()
             editIndex = -1
+            newDir = false
+        }
+
+        onDeleteDirSuccess: {
+            refresh()
+        }
+
+        onBackupSuccess: {
+            dirLevel --
+            refresh()
+        }
+
+        onEnterDirSuccess: {
+            dirLevel ++
+            refresh()
+        }
+
+        onRenameSuccess: {
+            editIndex = -1
+            refresh()
         }
     }
 
@@ -84,6 +112,7 @@ Window {
                         text: "+"
                         visible: false
                         display: AbstractButton.IconOnly
+                        enabled: hasLogin
                         Layout.minimumHeight: 70
                         Layout.minimumWidth: 70
                         Layout.maximumHeight: 70
@@ -102,6 +131,7 @@ Window {
 
                     RoundButton {
                         id: roundButton
+                        enabled: hasLogin
                         x: 0
                         display: AbstractButton.IconOnly
                         Layout.maximumHeight: 70
@@ -117,11 +147,13 @@ Window {
 
                         onClicked: {
                             columnLayout2.nowObj = 1
+                            stackIndex = 1
                         }
                     }
 
                     RoundButton {
                         id: roundButton1
+                        enabled: hasLogin
                         x: 0
                         display: AbstractButton.IconOnly
                         Layout.maximumHeight: 70
@@ -137,6 +169,7 @@ Window {
 
                         onClicked: {
                             columnLayout2.nowObj = 2
+                            stackIndex = 2
                         }
                     }
 
@@ -166,6 +199,7 @@ Window {
 
                 RoundButton {
                     id: roundButton2
+                    enabled: hasLogin
                     width: 70
                     height: 70
                     text: "+"
@@ -225,6 +259,10 @@ Window {
 
                         palette {
                             button: "ghostwhite"
+                        }
+
+                        onClicked: {
+                            window.showMinimized()
                         }
                     }
 
@@ -427,16 +465,73 @@ Window {
                             Layout.fillWidth: true
 
                             Button {
+                                id: backup
+                                Layout.minimumHeight: 30
+                                Layout.minimumWidth: 100
+                                background: Rectangle {
+                                        color: button3.down ? "dodgerblue" :  "deepskyblue"
+                                        radius: 3
+                                        border.color: "#007bff"
+                                        border.width: 1
+                                    }
+
+                                contentItem: Text {
+                                    text: "返回上一级"
+                                    font.bold: true
+                                    font.pixelSize: 18
+                                    horizontalAlignment: Text.AlignHCenter
+                                    color: "white"
+                                }
+
+                                onClicked: {
+                                    if (dirLevel == 0) return ;
+                                    camelClient.backupDirectory();
+                                }
+                            }
+
+                            Button {
                                 id: button1
-                                text: qsTr("upload")
+                                Layout.minimumHeight: 30
+                                Layout.minimumWidth: 100
+                                background: Rectangle {
+                                        color: button1.down ? "dodgerblue" :  "deepskyblue"
+                                        radius: 3
+                                        border.color: "#007bff"
+                                        border.width: 1
+                                    }
+
+                                contentItem: Text {
+                                    text: "上传文件"
+                                    font.bold: true
+                                    font.pixelSize: 18
+                                    horizontalAlignment: Text.AlignHCenter
+                                    color: "white"
+                                }
                             }
 
                             Button {
                                 id: button2
-                                text: qsTr("newdir")
+                                Layout.minimumHeight: 30
+                                Layout.minimumWidth: 100
+                                background: Rectangle {
+                                        color: button2.down ? "dodgerblue" :  "deepskyblue"
+                                        radius: 3
+                                        border.color: "#007bff"
+                                        border.width: 1
+                                    }
+
+                                contentItem: Text {
+                                    text: "新建文件夹"
+                                    font.bold: true
+                                    font.pixelSize: 18
+                                    horizontalAlignment: Text.AlignHCenter
+                                    color: "white"
+                                }
 
                                 onClicked: {
+                                    if(editIndex != -1) return
                                     editIndex = fileList.count
+                                    newDir = true
                                     fileList.append({
                                                         "infoType": "folder",
                                                         "ext": "folder",
@@ -447,8 +542,22 @@ Window {
 
                             Button {
                                 id: button3
-                                text: qsTr("refresh")
+                                Layout.minimumHeight: 30
+                                Layout.minimumWidth: 100
+                                background: Rectangle {
+                                        color: button3.down ? "dodgerblue" :  "deepskyblue"
+                                        radius: 3
+                                        border.color: "#007bff"
+                                        border.width: 1
+                                    }
 
+                                contentItem: Text {
+                                    text: "刷新"
+                                    font.bold: true
+                                    font.pixelSize: 18
+                                    horizontalAlignment: Text.AlignHCenter
+                                    color: "white"
+                                }
                                 onClicked: {
                                     refresh()
                                 }
@@ -498,6 +607,12 @@ Window {
                                                     break
                                                 }
                                             }
+                                            onDoubleClicked: {
+                                                console.log("test")
+                                                if (infoType == "folder") {
+                                                    camelClient.openDirectory(name)
+                                                }
+                                            }
 
                                             Menu {
                                                 id: fileMenu
@@ -509,6 +624,10 @@ Window {
                                                 }
                                                 MenuItem {
                                                     text: "重命名"
+
+                                                    onClicked: {
+                                                        editIndex = index
+                                                    }
                                                 }
                                             }
 
@@ -516,9 +635,14 @@ Window {
                                                 id: dirMenu
                                                 MenuItem {
                                                     text: "删除"
+                                                    onClicked: {
+                                                        camelClient.deleteDirectory(name)
+                                                    }
                                                 }
                                                 MenuItem {
                                                     text: "重命名"
+
+                                                    onClicked: editIndex = index
                                                 }
                                             }
                                         }
@@ -554,9 +678,13 @@ Window {
                                                 id: dirNameInput
                                                 visible: editIndex == index
                                                 width: 120
+                                                horizontalAlignment: Text.AlignHCenter
                                                 Keys.onReleased: {
-                                                    if(event.key !== Qt.Key_Return || text.length <= 0) return ;
-                                                    camelClient.createDirectory(text)
+                                                    if (event.key !== Qt.Key_Return || text.length <= 0) return ;
+                                                    if (newDir) camelClient.createDirectory(text)
+                                                    else {
+                                                        camelClient.rename(name, text)
+                                                    }
                                                 }
                                             }
                                         }

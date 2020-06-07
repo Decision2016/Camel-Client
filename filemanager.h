@@ -16,6 +16,8 @@ public:
     bool createDirectory(QString _dirName);
     bool deleteDirectory(QString _dirName);
     bool openDirectory(QString _dirName);
+    bool backupDirectory();
+    bool rename(QString &_originName, QString &_newName);
 
     void downloadFile(QString _fileName);
     void uploadFile(QString _fileName);
@@ -31,6 +33,8 @@ private:
     void aesEncrypt(unsigned char* in, unsigned char* out, int len);
     void aesDecrypt(unsigned char* in, unsigned char* out, int len);
     void setToken(unsigned char* buffer);
+    void sendDirInfo(const int &statusCode, QString _dirName);
+
     static void pushValue(unsigned char *buffer, const long long &value, const int bytes_len);
     static void popValue(const unsigned char *buffer, long long &value, const int bytes_len);
 };
