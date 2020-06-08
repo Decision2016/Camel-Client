@@ -1,6 +1,6 @@
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
-#include "camel_client.h"
+#include "headers/camel_client.h"
 
 int main(int argc, char *argv[])
 {

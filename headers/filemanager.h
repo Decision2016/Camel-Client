@@ -19,7 +19,7 @@ public:
     bool backupDirectory();
     bool rename(QString &_originName, QString &_newName);
 
-    void deleteFile(QString _fileNmae);
+    bool deleteFile(QString _fileName);
 
     std::string getNowPath();
     bool checkFileExist(QString &_fileName);

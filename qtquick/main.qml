@@ -646,6 +646,9 @@ Window {
                                                 }
                                                 MenuItem {
                                                     text: "删除"
+                                                    onClicked: {
+                                                        camelClient.deleteFile(name)
+                                                    }
                                                 }
                                                 MenuItem {
                                                     text: "重命名"

@@ -1,4 +1,4 @@
-#include "filemanager.h"
+#include "headers/filemanager.h"
 
 FileManager::FileManager(SOCKET _client, unsigned char* _token, unsigned char* _key): client_socket(_client) {
     memcpy(token, _token, TOKEN_LENGTH);
@@ -134,6 +134,24 @@ bool FileManager::rename(QString &_originName, QString &_newName) {
         }
         popValue((unsigned char*)recv_buffer, statusCode, 2);
         if (statusCode != SERVER_RENAME) return false;
+        else break;
+    }
+    return true;
+}
+
+bool FileManager::deleteFile(QString _fileName) {
+    long long statusCode;
+    int length;
+    sendDirInfo(FILE_DELETE, _fileName);
+
+    while (true) {
+        length = recv(client_socket, recv_buffer, BUFFER_LENGTH, 0);
+        if (length == -1) {
+            // todo: 超时检测
+            continue;
+        }
+        popValue((unsigned char*)recv_buffer, statusCode, 2);
+        if (statusCode != SERVER_DELETE) return false;
         else break;
     }
     return true;

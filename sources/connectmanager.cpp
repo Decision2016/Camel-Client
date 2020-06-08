@@ -1,4 +1,4 @@
-#include "connectmanager.h"
+#include "headers/connectmanager.h"
 
 ConnectManager::ConnectManager()
 {

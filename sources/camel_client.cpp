@@ -1,4 +1,4 @@
-#include "camel_client.h"
+#include "headers/camel_client.h"
 
 camel_client::camel_client() {
     server_key = RSA_new();
@@ -281,6 +281,11 @@ unsigned long long camel_client::getFileSize(const char *_filePath) {
         return statbuf.st_size;
     }
     return -1;
+}
+
+void camel_client::deleteFile(QString _fileName) {
+    if (fm -> deleteFile(_fileName)) deleteSuccess();
+    else deleteError();
 }
 
 void camel_client::downloadFile(QString _fileName) {

@@ -39,6 +39,7 @@ public slots:
     void rename(QString _originName, QString _newName);
     void backupDirectory();
 
+    void deleteFile(QString _fileName);
     void downloadFile(QString _fileName);
     void uploadFile(QString _filePath);
     QString getDirInfo();
@@ -55,6 +56,8 @@ signals:
     void backupError();
     void renameSuccess();
     void renameError();
+    void deleteSuccess();
+    void deleteError();
 private:
     RSA *server_key, *client_key;
     AES_KEY aesKey;
