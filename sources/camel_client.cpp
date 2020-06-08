@@ -12,6 +12,12 @@ camel_client::~camel_client() {
 
     if (! fm) {
         delete fm;
+        fm = nullptr;
+    }
+
+    if (! tp) {
+        delete tp;
+        tp = nullptr;
     }
 }
 
@@ -72,7 +78,7 @@ void camel_client::signUser(QString username, QString password) {
     }
 
     send(clientSocket, send_buffer, 4096, 0);
-    qDebug() << "login requir send";
+    qDebug() << "login require send";
 
     while (1) {
         n = recv(clientSocket, recv_buffer, 4096, 0);
@@ -82,6 +88,8 @@ void camel_client::signUser(QString username, QString password) {
                 aesDecrypt((unsigned char*)&recv_buffer[2], (unsigned char*)buffer, 34);
                 filePort = (int)(unsigned char) buffer[0];
                 filePort = (filePort << 8) | (int)(unsigned char) buffer[1];
+                tp = new Transporter(filePort, key);
+                std::thread(&Transporter::threadInstance, tp).detach();
                 setToken(&buffer[2]);
                 client_socket = clientSocket;
                 fm = new FileManager(clientSocket, token, key);
@@ -261,4 +269,34 @@ void camel_client::backupDirectory() {
 void camel_client::rename(QString _originName, QString _newName) {
     if (fm -> rename(_originName, _newName)) renameSuccess();
     else renameError();
+}
+
+QString camel_client::getQueueInfo() {
+    return QString::fromStdString(tp -> getQueueInfo());
+}
+
+unsigned long long camel_client::getFileSize(const char *_filePath) {
+    struct stat statbuf;
+    if (stat(_filePath, &statbuf) == 0) {
+        return statbuf.st_size;
+    }
+    return -1;
+}
+
+void camel_client::downloadFile(QString _fileName) {
+    std::string fileName = _fileName.toStdString();
+    std::string originPath = fm -> getNowPath() + '/' + fileName;
+    std::string destination("./");
+    destination.append(fileName);
+    Task task(taskType::DOWNLOAD, fileName, originPath, destination);
+    tp -> addTask(task);
+}
+
+void camel_client::uploadFile(QString _filePath) {
+    std::string filePath = _filePath.toStdString();
+    std::string fileName = filePath.substr(filePath.find_last_of('/') + 1);
+    std::string destinationPath = fm -> getNowPath() + '/' + fileName;
+    Task task(taskType::UPLOAD, fileName, std::string(_filePath.toLocal8Bit()), destinationPath);
+    task.setSize(getFileSize(_filePath.toLocal8Bit()));
+    tp -> addTask(task);
 }

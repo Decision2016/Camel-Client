@@ -105,5 +105,27 @@ bool TaskQueue::checkTask(const Task &_task) {
 }
 
 bool TaskQueue::empty() {
+    bool emp = runningTaskHead -> nextTask == nullptr;
     return runningTaskHead -> nextTask == nullptr;
+}
+
+std::string TaskQueue::popTaskInfo() {
+    std::string res;
+    res.clear();
+    Task *p = runningTaskHead -> nextTask;
+    while (p != nullptr) {
+        res.append(p -> popTaskInfo());
+        res.push_back('/');
+        res.append("runnning;");
+        p = p -> nextTask;
+    }
+
+    p = pauseTaskHead -> nextTask;
+    while (p != nullptr) {
+        res.append(p -> popTaskInfo());
+        res.push_back('/');
+        res.append("paused;");
+        p = p -> nextTask;
+    }
+    return res;
 }

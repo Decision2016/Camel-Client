@@ -19,9 +19,10 @@ public:
     bool backupDirectory();
     bool rename(QString &_originName, QString &_newName);
 
-    void downloadFile(QString _fileName);
-    void uploadFile(QString _fileName);
     void deleteFile(QString _fileNmae);
+
+    std::string getNowPath();
+    bool checkFileExist(QString &_fileName);
 private:
     AES_KEY aesKey;
     SOCKET client_socket;

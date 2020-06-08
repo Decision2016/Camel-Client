@@ -16,6 +16,7 @@ public:
     void startTask(const int &_index);
     bool checkTask(const Task &_task);
     bool empty();
+    std::string popTaskInfo();
     Task* popTask();
 private:
     Task *runningTaskHead, *pauseTaskHead;

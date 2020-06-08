@@ -13,18 +13,28 @@ DEFINES += QT_DEPRECATED_WARNINGS
 # You can also select to disable deprecated APIs only up to a certain version of Qt.
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
-SOURCES += \
-        camel_client.cpp \
-        connectmanager.cpp \
-        filemanager.cpp \
-        main.cpp \
-        task.cpp \
-        taskqueue.cpp \
-        transporter.cpp
+HEADERS += \
+    headers/camel_client.h \
+    headers/connectmanager.h \
+    headers/constants.h \
+    headers/filemanager.h \
+    headers/task.h \
+    headers/taskqueue.h \
+    headers/transporter.h
 
-RESOURCES += qml.qrc \
-    icons.qrc \
-    modules.qrc
+
+SOURCES += \
+        sources/camel_client.cpp \
+        sources/connectmanager.cpp \
+        sources/filemanager.cpp \
+        sources/main.cpp \
+        sources/task.cpp \
+        sources/taskqueue.cpp \
+        sources/transporter.cpp
+
+RESOURCES += qtquick/qml.qrc \
+    qtquick/icons.qrc \
+    qtquick/modules.qrc
 
 # Additional import path used to resolve QML modules in Qt Creator's code model
 QML_IMPORT_PATH =
@@ -36,21 +46,6 @@ QML_DESIGNER_IMPORT_PATH =
 qnx: target.path = /tmp/$${TARGET}/bin
 else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
-
-DISTFILES += \
-    C:/Users/Administrator/Downloads/query-queue (2).png \
-    src/cross-focus.png \
-    src/queue-focus.png \
-    src/queue-static.png
-
-HEADERS += \
-    camel_client.h \
-    connectmanager.h \
-    constants.h \
-    filemanager.h \
-    task.h \
-    taskqueue.h \
-    transporter.h
 
 INCLUDEPATH += $$quote(C:/Program Files (x86)/OpenSSL-Win32/include)
 

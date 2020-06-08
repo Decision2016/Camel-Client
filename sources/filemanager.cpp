@@ -85,6 +85,34 @@ bool FileManager::backupDirectory() {
     return true;
 }
 
+std::string FileManager::getNowPath() {
+    std::string res;
+    long long statusCode, len;
+    int length;
+    clearBuffer();
+
+    pushValue((unsigned char*)send_buffer, FILE_GET_PATH, 2);
+    aesEncrypt(token, (unsigned char*) &send_buffer[2], TOKEN_LENGTH);
+    send(client_socket, send_buffer, BUFFER_LENGTH, 0);
+
+    while (true) {
+        length = recv(client_socket, recv_buffer, BUFFER_LENGTH, 0);
+        if (length == -1) {
+            // todo: 超时检测
+            continue;
+        }
+        popValue((unsigned char*)recv_buffer, statusCode, 2);
+        if (statusCode != SERVER_FILE_PATH) break;
+        popValue((unsigned char*)&recv_buffer[2], len, 2);
+        aesDecrypt((unsigned char*)&recv_buffer[4], (unsigned char*) buffer, len);
+        res.clear();
+
+        for (int i = 0; i < len;i++) res.push_back(buffer[i]);
+        break;
+    }
+    return res;
+}
+
 
 bool FileManager::rename(QString &_originName, QString &_newName) {
     std::string nameData = _originName.toStdString() + "/" + _newName.toStdString();

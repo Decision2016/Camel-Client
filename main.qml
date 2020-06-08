@@ -3,6 +3,7 @@ import QtQuick.Window 2.14
 import QtQuick.Controls 2.14
 import QtQuick.Layouts 1.12
 import QtQuick.VirtualKeyboard 2.14
+import QtQuick.Dialogs 1.2
 import cn.decision01.modules 1.0
 
 Window {
@@ -23,18 +24,10 @@ Window {
 
     ListModel {
         id: fileList
+    }
 
-        ListElement {
-           infoType: "folder"
-           ext: "folder"
-           name: "test.png"
-        }
-
-        ListElement {
-           infoType: "folder"
-           ext: "folder"
-           name: "test.png"
-        }
+    ListModel {
+        id: transportList
     }
 
     CamelClient{
@@ -69,6 +62,29 @@ Window {
         onRenameSuccess: {
             editIndex = -1
             refresh()
+        }
+    }
+
+    Timer {
+        id: queueTimer
+        repeat: true
+        running: false
+        interval: 500
+        triggeredOnStart: true
+
+        onTriggered: refreshQueue()
+    }
+
+    FileDialog {
+        id: fileDialog
+        title: "选择文件"
+        folder: shortcuts.desktop
+        selectMultiple: true
+
+        onAccepted: {
+            for (var pos = 0; pos < fileUrls.length; pos++) {
+                camelClient.uploadFile(decodeUrl(fileUrls[pos]))
+            }
         }
     }
 
@@ -109,7 +125,6 @@ Window {
 
                     RoundButton {
                         id: roundButton6
-                        text: "+"
                         visible: false
                         display: AbstractButton.IconOnly
                         enabled: hasLogin
@@ -148,6 +163,7 @@ Window {
                         onClicked: {
                             columnLayout2.nowObj = 1
                             stackIndex = 1
+                            queueTimer.running = false
                         }
                     }
 
@@ -170,6 +186,8 @@ Window {
                         onClicked: {
                             columnLayout2.nowObj = 2
                             stackIndex = 2
+                            refreshQueue()
+                            queueTimer.running = true
                         }
                     }
 
@@ -507,6 +525,10 @@ Window {
                                     horizontalAlignment: Text.AlignHCenter
                                     color: "white"
                                 }
+
+                                onClicked: {
+                                    fileDialog.open()
+                                }
                             }
 
                             Button {
@@ -618,6 +640,9 @@ Window {
                                                 id: fileMenu
                                                 MenuItem {
                                                     text: "下载"
+                                                    onClicked: {
+                                                        camelClient.downloadFile(name)
+                                                    }
                                                 }
                                                 MenuItem {
                                                     text: "删除"
@@ -757,6 +782,7 @@ Window {
                                 id: listView
                                 clip: true
                                 orientation: ListView.Vertical
+                                model: transportList
                                 delegate: Item {
                                     id: element5
                                     height: 70
@@ -767,18 +793,15 @@ Window {
 
                                     Row {
                                         id: rowView
+                                        anchors.fill: parent
                                         spacing: 20
-                                        anchors.left: parent.left
-                                        anchors.leftMargin: 0
-                                        anchors.right: parent.right
-                                        anchors.rightMargin: 0
 
                                         Image {
                                             mipmap: true
                                             width: 60
                                             height: 60
                                             id: imgView
-                                            source: "qrc:/ext/src/ext/png.png"
+                                            source: "qrc:/ext/src/ext/" + ext + ".png"
                                         }
 
                                         Column {
@@ -789,7 +812,7 @@ Window {
                                             anchors.leftMargin: 70
 
                                             Text {
-                                                text: rowView.width
+                                                text: name
                                                 bottomPadding: 10
                                                 topPadding: 10
                                                 verticalAlignment: Text.AlignVCenter
@@ -797,7 +820,7 @@ Window {
 
                                             ProgressBar {
                                                 id: progressbar
-                                                value: 30
+                                                value: percent
                                                 to: 100
                                                 anchors.right: parent.right
                                                 anchors.rightMargin: 0
@@ -827,6 +850,7 @@ Window {
                                                 height: 30
                                                 anchors.verticalCenter: parent.verticalCenter
 
+                                                icon.source: status == "paused" ? "qrc:/icons/src/play.png" : "qrc:/icons/src/pause.png"
                                             }
 
                                             RoundButton {
@@ -834,6 +858,8 @@ Window {
                                                 height: 30
                                                 anchors.verticalCenter: parent.verticalCenter
 
+                                                icon.source: "qrc:/icons/src/stop.png"
+
                                             }
 
                                             RoundButton {
@@ -841,12 +867,10 @@ Window {
                                                 height: 30
                                                 anchors.verticalCenter: parent.verticalCenter
 
+                                                icon.source: "qrc:/icons/src/close.png"
                                             }
                                         }
                                     }
-                                }
-                                model: ListModel {
-
                                 }
                             }
                         }
@@ -882,6 +906,30 @@ Window {
     function refresh() {
         fileList.clear()
         getList()
+    }
+
+    function refreshQueue() {
+        var infoString = String(camelClient.getQueueInfo())
+        var list = infoString.split(";")
+        transportList.clear()
+        for (var i = 0; i < list.length - 1; i++) {
+            var obj = list[i].split('/')
+            var pos = obj[0].lastIndexOf('.')
+            var extName = "other"
+            if (pos !== -1) extName = obj[0].substring(pos + 1, obj[0].length)
+            transportList.append({
+                                     "name": obj[0],
+                                     "percent": obj[1],
+                                     "status": obj[2],
+                                     "ext": checkExtName("1", extName)
+                                 })
+        }
+    }
+
+    function decodeUrl(urlObj) {
+        var path = urlObj.toString()
+        path = path.replace(/^(file:\/{3})/,"")
+        return path
     }
 }
 

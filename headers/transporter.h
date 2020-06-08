@@ -10,11 +10,13 @@
 #include "taskqueue.h"
 #include "task.h"
 #include "constants.h"
+#include <string>
 
 class Transporter
 {
 public:
-    Transporter(SOCKET _socket);
+    Transporter(int port, const unsigned char* _key);
+    ~Transporter();
     void threadInstance();
 
     void addTask(const Task &_task);
@@ -25,6 +27,7 @@ public:
     bool checkTask(const Task &_task);
     void pauseNowTask();
     std::string getList();
+    std::string getQueueInfo();
 private:
     SOCKET file_socket;
     TaskQueue taskQueue;
