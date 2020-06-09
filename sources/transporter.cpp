@@ -80,6 +80,7 @@ void Transporter::uploadFile() {
             pushValue((unsigned char*) send_buffer, FILE_PAUSED, 2);
             send(file_socket, send_buffer, 2, 0);
             taskQueue.addTaskPointer(nowTask, Type::PAUSED);
+            nowTask = nullptr;
             pause = false;
             break;
         }
@@ -130,6 +131,7 @@ void Transporter::downloadFile() {
             pushValue((unsigned char*) send_buffer, FILE_PAUSED, 2);
             send(file_socket, send_buffer, 2, 0);
             taskQueue.addTaskPointer(nowTask, Type::PAUSED);
+            nowTask = nullptr;
             pause = false;
             break;
         }
@@ -158,7 +160,8 @@ void Transporter::addTask(const Task &_task) {
 }
 
 void Transporter::pauseTask(const int &_index) {
-    taskQueue.pauseTask(_index);
+    if (_index == 0) pause = true;
+    else taskQueue.pauseTask(_index - 1);
 }
 
 void Transporter::startTask(const int &_index) {

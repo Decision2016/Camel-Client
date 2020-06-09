@@ -1,3 +1,7 @@
 <RCC>
-    <qresource prefix="/modules"/>
+    <qresource prefix="/modules">
+        <file>Login.qml</file>
+        <file>FileList.qml</file>
+        <file>LoadList.qml</file>
+    </qresource>
 </RCC>

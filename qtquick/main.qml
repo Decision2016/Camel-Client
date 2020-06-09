@@ -6,12 +6,12 @@ import QtQuick.VirtualKeyboard 2.14
 import QtQuick.Dialogs 1.2
 import cn.decision01.modules 1.0
 
+import "qrc:/modules"
+
 Window {
     property bool hasLogin: false
     property int stackIndex: 0
-    property int editIndex: -1
-    property int dirLevel: 0
-    property bool newDir: false
+    property int runningCount
 
     id: window
     visible: true
@@ -41,8 +41,8 @@ Window {
 
         onCreateDirSuccess: {
             refresh()
-            editIndex = -1
-            newDir = false
+            fileListPage.editIndex = -1
+            fileListPage.newDir = false
         }
 
         onDeleteDirSuccess: {
@@ -50,17 +50,17 @@ Window {
         }
 
         onBackupSuccess: {
-            dirLevel --
+            fileListPage.dirLevel --
             refresh()
         }
 
         onEnterDirSuccess: {
-            dirLevel ++
+            fileListPage.dirLevel ++
             refresh()
         }
 
         onRenameSuccess: {
-            editIndex = -1
+            fileListPage.editIndex = -1
             refresh()
         }
     }
@@ -334,550 +334,37 @@ Window {
                 height: 100
                 currentIndex: stackIndex
 
-                Item {
-                    id: element2
-
-                    Rectangle {
-                        id: rectangle2
-                        width: 654
-                        height: 340
-                        color: "#ffffff"
-                        radius: 13
-                        anchors.verticalCenter: parent.verticalCenter
-                        anchors.horizontalCenter: parent.horizontalCenter
-
-                        ColumnLayout {
-                            id: columnLayout3
-                            x: -115
-                            y: -7
-                            width: 430
-                            height: 235
-                            spacing: 0
-                            anchors.horizontalCenter: parent.horizontalCenter
-                            anchors.verticalCenter: parent.verticalCenter
-
-
-                            Text {
-                                id: element1
-                                text: qsTr("Username")
-                                verticalAlignment: Text.AlignVCenter
-                                bottomPadding: 15
-                                topPadding: 15
-                                Layout.fillHeight: true
-                                Layout.fillWidth: true
-                                font.bold: true
-                                font.pixelSize: 25
-                            }
-
-
-
-                            TextEdit {
-                                id: textEdit
-                                width: 80
-                                height: 20
-                                text: qsTr("")
-                                textFormat: Text.PlainText
-                                selectByMouse: true
-                                verticalAlignment: Text.AlignBottom
-                                Layout.maximumHeight: 40
-                                Layout.minimumHeight: 40
-                                Layout.fillWidth: true
-                                font.pixelSize: 22
-                                activeFocusOnTab: true
-                            }
-
-                            Rectangle {
-                                id: rectangle6
-                                width: 200
-                                height: 200
-                                color: "deepskyblue"
-                                Layout.maximumHeight: 1
-                                Layout.fillWidth: true
-                                Layout.minimumHeight: 1
-                            }
-
-                            Text {
-                                id: element
-                                text: "Password"
-                                verticalAlignment: Text.AlignVCenter
-                                bottomPadding: 15
-                                topPadding: 15
-                                Layout.fillHeight: true
-                                Layout.fillWidth: true
-                                font.bold: true
-                                font.pixelSize: 25
-                            }
-
-                            TextEdit {
-                                id: textEdit1
-                                width: 80
-                                height: 20
-                                text: qsTr("")
-                                selectByMouse: true
-                                verticalAlignment: Text.AlignBottom
-                                Layout.fillWidth: true
-                                Layout.maximumHeight: 40
-                                Layout.minimumHeight: 40
-                                font.pixelSize: 22
-                                activeFocusOnTab: true
-                            }
-
-                            Rectangle {
-                                id: rectangle5
-                                width: 200
-                                height: 200
-                                color: "deepskyblue"
-                                Layout.maximumHeight: 1
-                                Layout.fillWidth: true
-                                Layout.minimumHeight: 1
-                            }
-
-                            Button {
-                                id: button
-                                text: qsTr("Login")
-                                topPadding: 6
-                                checkable: false
-                                Layout.topMargin: 20
-                                Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
-
-                                onClicked: {
-                                    camelClient.signUser(textEdit.text, textEdit1.text)
-                                }
-
-                                KeyNavigation.tab: textEdit
-                            }
-
-                        }
-
+                Login {
+                    id: loginPage
+                    onClickLogin: {
+                        camelClient.signUser(username, password)
                     }
-
-                    Text {
-                        id: element3
-                        width: 151
-                        height: 60
-                        text: qsTr("Login")
-                        anchors.verticalCenterOffset: -220
-                        anchors.verticalCenter: parent.verticalCenter
-                        anchors.horizontalCenterOffset: -260
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        font.bold: true
-                        font.pixelSize: 50
-                    }
-
                 }
 
-                Item {
-                    id: element4
+                FileList {
+                    id: fileListPage
+                    dataList: fileList
 
-                    ColumnLayout {
-                        id: columnLayout4
-                        anchors.fill: parent
-
-                        RowLayout {
-                            id: rowLayout3
-                            width: 100
-                            height: 100
-                            Layout.fillHeight: true
-                            Layout.maximumHeight: 50
-                            Layout.minimumHeight: 50
-                            Layout.fillWidth: true
-
-                            Button {
-                                id: backup
-                                Layout.minimumHeight: 30
-                                Layout.minimumWidth: 100
-                                background: Rectangle {
-                                        color: button3.down ? "dodgerblue" :  "deepskyblue"
-                                        radius: 3
-                                        border.color: "#007bff"
-                                        border.width: 1
-                                    }
-
-                                contentItem: Text {
-                                    text: "返回上一级"
-                                    font.bold: true
-                                    font.pixelSize: 18
-                                    horizontalAlignment: Text.AlignHCenter
-                                    color: "white"
-                                }
-
-                                onClicked: {
-                                    if (dirLevel == 0) return ;
-                                    camelClient.backupDirectory();
-                                }
-                            }
-
-                            Button {
-                                id: button1
-                                Layout.minimumHeight: 30
-                                Layout.minimumWidth: 100
-                                background: Rectangle {
-                                        color: button1.down ? "dodgerblue" :  "deepskyblue"
-                                        radius: 3
-                                        border.color: "#007bff"
-                                        border.width: 1
-                                    }
-
-                                contentItem: Text {
-                                    text: "上传文件"
-                                    font.bold: true
-                                    font.pixelSize: 18
-                                    horizontalAlignment: Text.AlignHCenter
-                                    color: "white"
-                                }
-
-                                onClicked: {
-                                    fileDialog.open()
-                                }
-                            }
-
-                            Button {
-                                id: button2
-                                Layout.minimumHeight: 30
-                                Layout.minimumWidth: 100
-                                background: Rectangle {
-                                        color: button2.down ? "dodgerblue" :  "deepskyblue"
-                                        radius: 3
-                                        border.color: "#007bff"
-                                        border.width: 1
-                                    }
-
-                                contentItem: Text {
-                                    text: "新建文件夹"
-                                    font.bold: true
-                                    font.pixelSize: 18
-                                    horizontalAlignment: Text.AlignHCenter
-                                    color: "white"
-                                }
-
-                                onClicked: {
-                                    if(editIndex != -1) return
-                                    editIndex = fileList.count
-                                    newDir = true
-                                    fileList.append({
-                                                        "infoType": "folder",
-                                                        "ext": "folder",
-                                                        "name": ""
-                                                    })
-                                }
-                            }
-
-                            Button {
-                                id: button3
-                                Layout.minimumHeight: 30
-                                Layout.minimumWidth: 100
-                                background: Rectangle {
-                                        color: button3.down ? "dodgerblue" :  "deepskyblue"
-                                        radius: 3
-                                        border.color: "#007bff"
-                                        border.width: 1
-                                    }
-
-                                contentItem: Text {
-                                    text: "刷新"
-                                    font.bold: true
-                                    font.pixelSize: 18
-                                    horizontalAlignment: Text.AlignHCenter
-                                    color: "white"
-                                }
-                                onClicked: {
-                                    refresh()
-                                }
-                            }
-                        }
-
-                        ScrollView {
-                            id: scroolView
-                            Layout.fillHeight: true
-                            Layout.fillWidth: true
-
-                            GridView {
-                                id: gridView
-                                topMargin: 20
-                                objectName: "gridView"
-                                rightMargin: 20
-                                leftMargin: 20
-                                anchors.fill: parent
-                                cellWidth: 150
-                                cellHeight: 150
-                                highlightFollowsCurrentItem: true
-                                focus: true
-                                model: fileList
-                                currentIndex: -1
-                                delegate: Component {
-                                    id: baseListDelegate
-                                    Item {
-                                        id: itemView
-                                        width: 120
-                                        height: 125
-                                        MouseArea{
-                                            anchors.fill: parent
-                                            acceptedButtons: Qt.LeftButton | Qt.RightButton
-                                            onClicked: {
-                                                switch (mouse.button) {
-                                                case Qt.LeftButton :
-                                                    gridView.currentIndex = index
-                                                    break
-                                                case Qt.RightButton :
-                                                    if (infoType === "folder") {
-                                                        dirMenu.popup()
-                                                    }
-                                                    else {
-                                                        fileMenu.popup()
-                                                    }
-
-                                                    break
-                                                }
-                                            }
-                                            onDoubleClicked: {
-                                                console.log("test")
-                                                if (infoType == "folder") {
-                                                    camelClient.openDirectory(name)
-                                                }
-                                            }
-
-                                            Menu {
-                                                id: fileMenu
-                                                MenuItem {
-                                                    text: "下载"
-                                                    onClicked: {
-                                                        camelClient.downloadFile(name)
-                                                    }
-                                                }
-                                                MenuItem {
-                                                    text: "删除"
-                                                    onClicked: {
-                                                        camelClient.deleteFile(name)
-                                                    }
-                                                }
-                                                MenuItem {
-                                                    text: "重命名"
-
-                                                    onClicked: {
-                                                        editIndex = index
-                                                    }
-                                                }
-                                            }
-
-                                            Menu {
-                                                id: dirMenu
-                                                MenuItem {
-                                                    text: "删除"
-                                                    onClicked: {
-                                                        camelClient.deleteDirectory(name)
-                                                    }
-                                                }
-                                                MenuItem {
-                                                    text: "重命名"
-
-                                                    onClicked: editIndex = index
-                                                }
-                                            }
-                                        }
-
-                                        Column {
-                                            spacing: 5
-                                            Rectangle {
-                                                width: 100
-                                                height: 100
-                                                color: "transparent"
-                                                anchors.horizontalCenter: parent.horizontalCenter
-                                                Image {
-                                                    mipmap: true
-                                                    source: "qrc:/ext/src/ext/" + ext + ".png"
-                                                    anchors.fill: parent
-                                                }
-
-
-                                            }
-
-                                            Text {
-                                                visible: editIndex != index
-                                                x: 5
-                                                text: name
-                                                horizontalAlignment: Text.AlignHCenter
-                                                elide: Text.ElideRight
-                                                font.bold: true
-                                                width: 120
-                                                anchors.horizontalCenter: parent.horizontalCenter
-                                            }
-
-                                            TextInput {
-                                                id: dirNameInput
-                                                visible: editIndex == index
-                                                width: 120
-                                                horizontalAlignment: Text.AlignHCenter
-                                                Keys.onReleased: {
-                                                    if (event.key !== Qt.Key_Return || text.length <= 0) return ;
-                                                    if (newDir) camelClient.createDirectory(text)
-                                                    else {
-                                                        camelClient.rename(name, text)
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-
-                                highlight: Component {
-                                    Rectangle {
-                                        radius: 5
-                                        opacity: 0.3
-                                        color: "dodgerblue"
-                                    }
-                                }
-
-                                flickableChildren: MouseArea {
-                                    anchors.fill: parent
-                                    onClicked: gridView.currentIndex = -1
-                                }
-                            }
-                        }
+                    onEnterDir: camelClient.openDirectory(editName)
+                    onUpload: fileDialog.open()
+                    onRefreshDir: refresh()
+                    onDownloadFile: camelClient.downloadFile(editName)
+                    onDeleteDir: camelClient.deleteDirectory(editName)
+                    onDeleteFile: camelClient.deleteFile(editName)
+                    onBackup: {
+                        if (dirLevel == 0) return ;
+                        camelClient.backupDirectory();
                     }
-
-                    BusyIndicator {
-                        id: busyIndicator
-                        x: 0
-                        y: 625
-                        visible: false
-
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        anchors.verticalCenter: parent.verticalCenter
-                    }
-
+                    onMkdir: camelClient.createDirectory(editName)
+                    onRename: camelClient.rename(editName, destinationName)
                 }
 
-                Item {
-                    Layout.fillHeight: true
-                    Layout.fillWidth: true
-                    ColumnLayout {
-                        id: columnLayout5
-                        anchors.fill: parent
+                LoadList {
+                    id: transportListPage
+                    dataList: transportList
 
-                        RowLayout {
-                            id: rowLayout4
-                            width: 100
-                            height: 100
-                            Layout.maximumHeight: 50
-                            Layout.fillWidth: true
-                            Layout.minimumHeight: 50
-
-                            Button {
-                                id: button4
-                                text: qsTr("Button")
-                            }
-
-                            Button {
-                                id: button5
-                                text: qsTr("Button")
-                            }
-                        }
-
-                        ScrollView {
-                            id: scrollView
-                            topPadding: 20
-                            rightPadding: 20
-                            leftPadding: 20
-                            Layout.fillHeight: true
-                            Layout.fillWidth: true
-
-                            ListView {
-                                id: listView
-                                clip: true
-                                orientation: ListView.Vertical
-                                model: transportList
-                                delegate: Item {
-                                    id: element5
-                                    height: 70
-                                    anchors.left: parent.left
-                                    anchors.leftMargin: 0
-                                    anchors.right: parent.right
-                                    anchors.rightMargin: 0
-
-                                    Row {
-                                        id: rowView
-                                        anchors.fill: parent
-                                        spacing: 20
-
-                                        Image {
-                                            mipmap: true
-                                            width: 60
-                                            height: 60
-                                            id: imgView
-                                            source: "qrc:/ext/src/ext/" + ext + ".png"
-                                        }
-
-                                        Column {
-                                            id: column
-                                            anchors.right: buttonsRow.right
-                                            anchors.rightMargin: 120
-                                            anchors.left: imgView.left
-                                            anchors.leftMargin: 70
-
-                                            Text {
-                                                text: name
-                                                bottomPadding: 10
-                                                topPadding: 10
-                                                verticalAlignment: Text.AlignVCenter
-                                            }
-
-                                            ProgressBar {
-                                                id: progressbar
-                                                value: percent
-                                                to: 100
-                                                anchors.right: parent.right
-                                                anchors.rightMargin: 0
-                                                anchors.left: parent.left
-                                                anchors.leftMargin: 0
-
-                                                contentItem: Item {
-                                                        implicitWidth: parent.width
-                                                        implicitHeight: parent.height
-
-                                                        Rectangle {
-                                                            width: parent.width * progressbar.visualPosition
-                                                            height: parent.height
-                                                            radius: 5
-                                                            color: "#17a81a"
-                                                        }
-                                                 }
-                                            }
-                                        }
-                                        Row {
-                                            id: buttonsRow
-                                            anchors.right: parent.right
-                                            anchors.rightMargin: 0
-                                            spacing: 5
-                                            RoundButton {
-                                                width: 30
-                                                height: 30
-                                                anchors.verticalCenter: parent.verticalCenter
-
-                                                icon.source: status == "paused" ? "qrc:/icons/src/play.png" : "qrc:/icons/src/pause.png"
-                                            }
-
-                                            RoundButton {
-                                                width: 30
-                                                height: 30
-                                                anchors.verticalCenter: parent.verticalCenter
-
-                                                icon.source: "qrc:/icons/src/stop.png"
-
-                                            }
-
-                                            RoundButton {
-                                                width: 30
-                                                height: 30
-                                                anchors.verticalCenter: parent.verticalCenter
-
-                                                icon.source: "qrc:/icons/src/close.png"
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
+                    onClickPause: camelClient.pauseTask(clickedIndex)
+                    onClickStart: camelClient.startTask(clickedIndex - runningCount)
                 }
             }
         }
@@ -915,16 +402,20 @@ Window {
         var infoString = String(camelClient.getQueueInfo())
         var list = infoString.split(";")
         transportList.clear()
+        runningCount = 0
         for (var i = 0; i < list.length - 1; i++) {
+            console.log(list[i])
             var obj = list[i].split('/')
             var pos = obj[0].lastIndexOf('.')
             var extName = "other"
+            if (obj[3] === "running") runningCount ++;
             if (pos !== -1) extName = obj[0].substring(pos + 1, obj[0].length)
             transportList.append({
                                      "name": obj[0],
                                      "percent": obj[1],
-                                     "status": obj[2],
-                                     "ext": checkExtName("1", extName)
+                                     "uploading": obj[2] === "1" ? true : false,
+                                     "status": obj[3],
+                                     "ext": checkExtName("1", extName),
                                  })
         }
     }

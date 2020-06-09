@@ -42,6 +42,10 @@ public slots:
     void deleteFile(QString _fileName);
     void downloadFile(QString _fileName);
     void uploadFile(QString _filePath);
+
+    void startTask(int _index);
+    void pauseTask(int _index);
+
     QString getDirInfo();
     QString getQueueInfo();
 signals:

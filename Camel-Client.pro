@@ -14,8 +14,8 @@ DEFINES += QT_DEPRECATED_WARNINGS
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 HEADERS += \
+    headers/baseclass.h \
     headers/camel_client.h \
-    headers/connectmanager.h \
     headers/constants.h \
     headers/filemanager.h \
     headers/task.h \
@@ -24,8 +24,8 @@ HEADERS += \
 
 
 SOURCES += \
+        headers/baseclass.cpp \
         sources/camel_client.cpp \
-        sources/connectmanager.cpp \
         sources/filemanager.cpp \
         sources/main.cpp \
         sources/task.cpp \
@@ -35,6 +35,9 @@ SOURCES += \
 RESOURCES += qtquick/qml.qrc \
     qtquick/icons.qrc \
     qtquick/modules.qrc
+
+INCLUDEPATH += \
+    headers/
 
 # Additional import path used to resolve QML modules in Qt Creator's code model
 QML_IMPORT_PATH =

@@ -105,7 +105,6 @@ bool TaskQueue::checkTask(const Task &_task) {
 }
 
 bool TaskQueue::empty() {
-    bool emp = runningTaskHead -> nextTask == nullptr;
     return runningTaskHead -> nextTask == nullptr;
 }
 

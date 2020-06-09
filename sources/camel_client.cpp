@@ -1,4 +1,4 @@
-#include "headers/camel_client.h"
+#include "camel_client.h"
 
 camel_client::camel_client() {
     server_key = RSA_new();
@@ -304,4 +304,12 @@ void camel_client::uploadFile(QString _filePath) {
     Task task(taskType::UPLOAD, fileName, std::string(_filePath.toLocal8Bit()), destinationPath);
     task.setSize(getFileSize(_filePath.toLocal8Bit()));
     tp -> addTask(task);
+}
+
+void camel_client::pauseTask(int _index) {
+    tp -> pauseTask(_index);
+}
+
+void camel_client::startTask(int _index) {
+    tp -> startTask(_index);
 }

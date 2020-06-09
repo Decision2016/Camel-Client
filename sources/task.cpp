@@ -61,5 +61,7 @@ std::string Task::popTaskInfo() {
     res.append(name);
     res.push_back('/');
     res.append(std::string(buffer));
+    if (type == taskType::UPLOAD) res.append("/1");
+    else res.append("/0");
     return res;
 }
