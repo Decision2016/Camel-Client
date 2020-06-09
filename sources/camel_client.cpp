@@ -28,7 +28,7 @@ void camel_client::signUser(QString username, QString password) {
     SOCKET clientSocket;
     struct sockaddr_in sin;
     int n, statusCode;
-    char send_buffer[4096], recv_buffer[4096], buffer[4096];
+    char send_buffer[BUFFER_LENGTH], recv_buffer[BUFFER_LENGTH], buffer[BUFFER_LENGTH];
 
     if (WSAStartup(MAKEWORD(2, 2), &s) != 0) {
         // todo: notice error
@@ -50,13 +50,13 @@ void camel_client::signUser(QString username, QString password) {
         return ;
     }
 
-    setStatusCode(211, send_buffer);
+    setStatusCode(SECOND_CONNECT, send_buffer);
 
     QByteArray t = username.toLocal8Bit();
-    memcpy(buffer, t.data(), 16);
+    memcpy(buffer, t.data(), USERNAME_LENGTH);
     t = password.toLocal8Bit();
-    memcpy(&buffer[16], t.data(), 16);
-    unsigned char *pos = (unsigned char*)&buffer[32];
+    memcpy(&buffer[USERNAME_LENGTH], t.data(), PASSWORD_LENGTH);
+    unsigned char *pos = (unsigned char*)&buffer[USERNAME_LENGTH + PASSWORD_LENGTH];
 
     BIGNUM* bignum = BN_new();
     BN_set_word(bignum, RSA_F4);
@@ -69,28 +69,28 @@ void camel_client::signUser(QString username, QString password) {
     SHA256_Init(&sha256);
     SHA256_Update(&sha256, buffer, 302);
     SHA256_Final(hash, &sha256);
-    memcpy(&buffer[32], hash, SHA256_DIGEST_LENGTH);
+    memcpy(&buffer[USERNAME_LENGTH + PASSWORD_LENGTH], hash, SHA256_DIGEST_LENGTH);
     memcpy(key, hash, 32);
 
-    int result = RSA_public_encrypt(64,(unsigned char*) buffer, (unsigned char*)&send_buffer[2], server_key, RSA_PKCS1_PADDING);
+    int result = RSA_public_encrypt(96,(unsigned char*) buffer, (unsigned char*)&send_buffer[2], server_key, RSA_PKCS1_PADDING);
     if (result < 0) {
         ERR_print_errors_fp(stdout);
     }
 
-    send(clientSocket, send_buffer, 4096, 0);
+    send(clientSocket, send_buffer, BUFFER_LENGTH, 0);
     qDebug() << "login require send";
 
     while (1) {
-        n = recv(clientSocket, recv_buffer, 4096, 0);
+        n = recv(clientSocket, recv_buffer, BUFFER_LENGTH, 0);
         if (n != -1) {
             getStatusCode(statusCode, recv_buffer);
-            if (statusCode == 112) {
+            if (statusCode == SERVER_SECOND_CONNECT) {
                 aesDecrypt((unsigned char*)&recv_buffer[2], (unsigned char*)buffer, 34);
                 filePort = (int)(unsigned char) buffer[0];
                 filePort = (filePort << 8) | (int)(unsigned char) buffer[1];
-                tp = new Transporter(filePort, key);
-                std::thread(&Transporter::threadInstance, tp).detach();
                 setToken(&buffer[2]);
+                tp = new Transporter(key, token);
+                std::thread(&Transporter::threadInstance, tp).detach();
                 client_socket = clientSocket;
                 fm = new FileManager(clientSocket, token, key);
                 loginSuccess();
@@ -105,7 +105,7 @@ void camel_client::fnFirstConnect() {
     SOCKET clientSocket;
     struct sockaddr_in sin;
     int n;
-    char send_buffer[4096], recv_buffer[4096];
+    char send_buffer[BUFFER_LENGTH], recv_buffer[BUFFER_LENGTH];
 
     if (WSAStartup(MAKEWORD(2, 2), &s) != 0) {
         // todo: notice error
@@ -127,19 +127,18 @@ void camel_client::fnFirstConnect() {
         return ;
     }
 
-    setStatusCode(210, send_buffer);
-    send(clientSocket, send_buffer, 2, 0);
+    setStatusCode(FIRST_CONNECT, send_buffer);
+    send(clientSocket, send_buffer, BUFFER_LENGTH, 0);
     int statusCode;
     while (true) {
-        n = recv(clientSocket, recv_buffer, 4096, 0);
+        n = recv(clientSocket, recv_buffer, BUFFER_LENGTH, 0);
         if (n != -1) {
             getStatusCode(statusCode, recv_buffer);
-            if (statusCode == 110 && checkSign(&recv_buffer[2]) == 0) {
+            if (statusCode == SERVER_FIRST_CONNECT && checkSign(&recv_buffer[2]) == 0) {
                 firstConnect = true;
                 loginPort = 0;
                 loginPort |= ((int)(unsigned char) recv_buffer[2]) << 8;
                 loginPort |= (int)(unsigned char) recv_buffer[3];
-                qDebug() << loginPort;
                 const unsigned char* rsa_start = (unsigned char*)&recv_buffer[4];
                 server_key = d2i_RSAPublicKey(nullptr, &rsa_start, 270);
                 client_socket = clientSocket;
@@ -151,36 +150,36 @@ void camel_client::fnFirstConnect() {
 
 QString camel_client::getDirInfo() {
     std::string dirInfo;
-    char send_buffer[4096], recv_buffer[4096], buffer[4096];
+    char send_buffer[BUFFER_LENGTH], recv_buffer[BUFFER_LENGTH], buffer[BUFFER_LENGTH];
     int length, cipherLength = 0, statusCode;
     memset(recv_buffer, 0, sizeof (recv_buffer));
     dirInfo.clear();
-    setStatusCode(200, send_buffer);
-    aesEncrypt(token, (unsigned char*)&send_buffer[2], 32);
-    send(client_socket, send_buffer, 34, 0);
-    clickTime();
+    setStatusCode(REFRESH_DIR, buffer);
+    memcpy((unsigned char*) &buffer[2], token, TOKEN_LENGTH);
+
+    aesEncrypt((unsigned char*) buffer, (unsigned char*)send_buffer, 34);
+    send(client_socket, send_buffer, BUFFER_LENGTH, 0);
+
     while (true) {
-        qDebug()<<"recv";
         length = recv(client_socket, recv_buffer, 4096, 0);
         if (length == -1) {
             if (checkTimeout(10)) break;
             continue;
         }
-        clickTime();
-        getStatusCode(statusCode, recv_buffer);
-        if (statusCode == 504) break;
-        if (statusCode != 100) continue;
-        cipherLength = (int)(unsigned char) recv_buffer[2];
-        cipherLength = (cipherLength << 8) | (int)(unsigned char) recv_buffer[3];
+        aesDecrypt((unsigned char*)recv_buffer, (unsigned char*)buffer, BUFFER_LENGTH);
+        getStatusCode(statusCode, buffer);
+        if (statusCode == SERVER_INFO_END) break;
+        if (statusCode != SERVER_DIR_INFO) continue;
+        cipherLength = (int)(unsigned char) buffer[2];
+        cipherLength = (cipherLength << 8) | (int)(unsigned char) buffer[3];
 
-        memset(buffer, 0, sizeof (buffer));
-        aesDecrypt((unsigned char*)&recv_buffer[4], (unsigned char*)buffer, cipherLength);
         for (int i = 0; i < cipherLength; i++) {
-            dirInfo.push_back(buffer[i]);
+            dirInfo.push_back(buffer[i + 4]);
         }
 
-        setStatusCode(402, send_buffer);
-        send(client_socket, send_buffer, 2, 0);
+        setStatusCode(RECEIVE_SUCCESS, buffer);
+        aesEncrypt((unsigned char*)buffer, (unsigned char*)send_buffer, 2);
+        send(client_socket, send_buffer, BUFFER_LENGTH, 0);
     }
 
     return QString::fromStdString(dirInfo);

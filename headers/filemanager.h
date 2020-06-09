@@ -7,9 +7,9 @@
 #include <openssl/aes.h>
 
 #include "constants.h"
+#include "baseclass.h"
 
-class FileManager
-{
+class FileManager : public BaseClass {
 public:
     FileManager(SOCKET _client, unsigned char* _token, unsigned char* _key);
 
@@ -25,19 +25,10 @@ public:
     bool checkFileExist(QString &_fileName);
 private:
     AES_KEY aesKey;
-    SOCKET client_socket;
-    unsigned char token[TOKEN_LENGTH], key[KEY_LENGTH], iv[16];
     char send_buffer[BUFFER_LENGTH], recv_buffer[BUFFER_LENGTH], buffer[BUFFER_LENGTH];
 
     inline void clearBuffer();
-    inline void clearIv();
-    void aesEncrypt(unsigned char* in, unsigned char* out, int len);
-    void aesDecrypt(unsigned char* in, unsigned char* out, int len);
-    void setToken(unsigned char* buffer);
     void sendDirInfo(const int &statusCode, QString _dirName);
-
-    static void pushValue(unsigned char *buffer, const long long &value, const int bytes_len);
-    static void popValue(const unsigned char *buffer, long long &value, const int bytes_len);
 };
 
 #endif // FILEMANAGER_H

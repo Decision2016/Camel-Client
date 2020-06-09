@@ -41,8 +41,7 @@ Window {
 
         onCreateDirSuccess: {
             refresh()
-            fileListPage.editIndex = -1
-            fileListPage.newDir = false
+            fileListPage.setIndex()
         }
 
         onDeleteDirSuccess: {
@@ -50,17 +49,17 @@ Window {
         }
 
         onBackupSuccess: {
-            fileListPage.dirLevel --
+            fileListPage.decrease()
             refresh()
         }
 
         onEnterDirSuccess: {
-            fileListPage.dirLevel ++
+            fileListPage.increase()
             refresh()
         }
 
         onRenameSuccess: {
-            fileListPage.editIndex = -1
+            fileListPage.setIndex()
             refresh()
         }
     }

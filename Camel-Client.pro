@@ -24,7 +24,7 @@ HEADERS += \
 
 
 SOURCES += \
-        headers/baseclass.cpp \
+        sources/baseclass.cpp \
         sources/camel_client.cpp \
         sources/filemanager.cpp \
         sources/main.cpp \

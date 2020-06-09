@@ -279,4 +279,17 @@ Item {
             }
         }
     }
+
+    function setIndex() {
+        editIndex = -1
+        newDir = false
+    }
+
+    function increase() {
+        dirLevel ++
+    }
+
+    function decrease() {
+        dirLevel --
+    }
 }

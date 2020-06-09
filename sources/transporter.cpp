@@ -1,8 +1,8 @@
-#include "headers/transporter.h"
+#include "transporter.h"
 
-Transporter::Transporter(int port, const unsigned char* _key) {
+Transporter::Transporter(const unsigned char* _key, const unsigned char *_token) : BaseClass(_key, _token){
+    SOCKET _socket;
     WSADATA s;
-    memcpy(key, _key, 32);
     nowTask = nullptr;
     struct sockaddr_in sin;
 
@@ -11,8 +11,8 @@ Transporter::Transporter(int port, const unsigned char* _key) {
         return ;
     }
 
-    file_socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-    if (file_socket == INVALID_SOCKET) {
+    _socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    if (_socket == INVALID_SOCKET) {
         // todo: notice error
         return ;
     }
@@ -20,15 +20,16 @@ Transporter::Transporter(int port, const unsigned char* _key) {
     sin.sin_family = AF_INET;
     sin.sin_port = htons(port);
     sin.sin_addr.S_un.S_addr = inet_addr("127.0.0.1");
-    if ( ::connect(file_socket, (struct sockaddr*)&sin, sizeof(sockaddr_in)) == SOCKET_ERROR) {
+    if ( ::connect(_socket, (struct sockaddr*)&sin, sizeof(sockaddr_in)) == SOCKET_ERROR) {
         //todo: notice error
-        closesocket(file_socket);
+        closesocket(_socket);
         return ;
     }
+    setSocket(_socket);
 }
 
 Transporter::~Transporter() {
-    closesocket(file_socket);
+    closesocket(thread_socket);
 }
 
 void Transporter::threadInstance() {
@@ -45,52 +46,55 @@ void Transporter::threadInstance() {
 }
 
 void Transporter::uploadFile() {
-    long long statusCode;
+    unsigned long long statusCode;
     int length, nextLen;
     unsigned long long total = nowTask -> getTotalLength();
     unsigned long long index = nowTask -> getCurrent();
+    length = nowTask -> destination.length();
     cleanBuffer();
     FILE *fp = fopen(nowTask -> origin.c_str(), "rb");
 
-    pushValue((unsigned char*) send_buffer, FILE_UPLOAD, 2);
-    length = nowTask -> destination.length();
-    pushValue((unsigned char*) &send_buffer[2], length, 2);
-    aesEncrypto((unsigned char*)nowTask -> destination.c_str(), (unsigned char*) &send_buffer[4], length);
+    pushValue((unsigned char*) buffer, FILE_UPLOAD, STATUS_LENGTH);
+    setToken((unsigned char*) &buffer[2]);
+    pushValue((unsigned char*) &buffer[34], index, 8);
+    pushValue((unsigned char*) &buffer[42], length, 2);
+    memcpy(&buffer[44], nowTask -> destination.c_str(), length);
 
-    send(file_socket, send_buffer, BUFFER_LENGTH, 0);
+    aesEncrypt((unsigned char*) buffer, (unsigned char*) send_buffer, BUFFER_LENGTH);
+
+    send(thread_socket, send_buffer, BUFFER_LENGTH, 0);
 
     while (true) {
-        length = recv(file_socket, recv_buffer, BUFFER_LENGTH, 0);
+        length = recv(thread_socket, recv_buffer, BUFFER_LENGTH, 0);
         if (length == -1) {
             continue;
         }
-        popValue((unsigned char*)recv_buffer, statusCode, 2);
-        if (statusCode != SERVER_FILE_UPLOAD) {
+        aesDecrypt((unsigned char*)recv_buffer, (unsigned char*)buffer, BUFFER_LENGTH);
+        popValue((unsigned char*)buffer, statusCode, 2);
+        if (statusCode != SERVER_FILE_RECEIVE) {
             //todo： 异常处理
         }
         if (index == total) {
-            // 仅发送状态码的代码可以整合为一个函数
-            pushValue((unsigned char*)send_buffer, CLIENT_FILE_END, 2);
-            send(file_socket, send_buffer, 2, 0);
+            sendStatusCode(CLIENT_FILE_END);
             delete nowTask;
             nowTask = nullptr;
             break;
         }
         if (pause) {
-            pushValue((unsigned char*) send_buffer, FILE_PAUSED, 2);
-            send(file_socket, send_buffer, 2, 0);
+            sendStatusCode(FILE_PAUSED);
             taskQueue.addTaskPointer(nowTask, Type::PAUSED);
             nowTask = nullptr;
             pause = false;
             break;
         }
-        nextLen = std::min(total - index, ONCE_LENGTH);
-        pushValue((unsigned char*) send_buffer, FILE_TRANSPORT, 2);
-        pushValue((unsigned char*) &send_buffer[2], nextLen, 2);
+        nextLen = std::min(total - index, ONCE_MAX_LENGTH);
+        pushValue((unsigned char*) buffer, FILE_TRANSPORT, 2);
+        setToken((unsigned char*) &buffer[2]);
+        pushValue((unsigned char*) &buffer[34], nextLen, 2);
 
-        fread(buffer, 1, nextLen, fp);
-        aesEncrypto((unsigned char*)buffer, (unsigned char*) &send_buffer[4], nextLen);
-        send(file_socket, send_buffer, BUFFER_LENGTH, 0);
+        fread(&buffer[36], 1, nextLen, fp);
+        aesEncrypt((unsigned char*)buffer, (unsigned char*) send_buffer, BUFFER_LENGTH);
+        send(thread_socket, send_buffer, BUFFER_LENGTH, 0);
         index += nextLen;
         nowTask -> addTransported(nextLen);
 
@@ -99,51 +103,54 @@ void Transporter::uploadFile() {
 }
 
 void Transporter::downloadFile() {
-    long long statusCode;
+    unsigned long long statusCode;
     int length;
     cleanBuffer();
 
     FILE *fp;
     fp = fopen(nowTask -> destination.c_str(), "ab");
+    length = nowTask -> origin.length();
 
     pushValue((unsigned char*) send_buffer, FILE_DOWNLOAD, 2);
-    length = nowTask -> origin.length();
-    pushValue((unsigned char*) &send_buffer[2], nowTask -> getCurrent(), 8);
-    pushValue((unsigned char*) &send_buffer[10], length, 2);
-    aesEncrypto((unsigned char*) nowTask -> origin.c_str(), (unsigned char*)&send_buffer[12], length);
+    setToken((unsigned char*) &buffer[2]);
+    pushValue((unsigned char*) &buffer[34], nowTask -> getCurrent(), 8);
+    pushValue((unsigned char*) &buffer[42], length, 2);
+    memcpy(&buffer[44], nowTask -> origin.c_str(), length);
+    aesEncrypt((unsigned char*)buffer, (unsigned char*)send_buffer, length);
 
-    send(file_socket, send_buffer, BUFFER_LENGTH, 0);
+    send(thread_socket, send_buffer, BUFFER_LENGTH, 0);
 
-    recv(file_socket, recv_buffer, BUFFER_LENGTH, 0);
+    recv(thread_socket, recv_buffer, BUFFER_LENGTH, 0);
+    aesDecrypt((unsigned char*)recv_buffer, (unsigned char*)buffer, BUFFER_LENGTH);
 
-    long long _size;
+    unsigned long long _size;
     popValue((unsigned char*)&recv_buffer[2], _size, 8);
     nowTask->setSize(_size);
 
-    pushValue((unsigned char*) send_buffer, FILE_TRANSPORT, 2);
-    send(file_socket, send_buffer, 2, 0);
+    sendStatusCode(FILE_TRANSPORT);
     while (true) {
-        length = recv(file_socket, recv_buffer, BUFFER_LENGTH, 0);
+        length = recv(thread_socket, recv_buffer, BUFFER_LENGTH, 0);
         if (length == -1) {
             continue;
         }
+
+        aesDecrypt((unsigned char*)recv_buffer, (unsigned char*)buffer, BUFFER_LENGTH);
+
         if (pause) {
-            pushValue((unsigned char*) send_buffer, FILE_PAUSED, 2);
-            send(file_socket, send_buffer, 2, 0);
+            sendStatusCode(FILE_PAUSED);
             taskQueue.addTaskPointer(nowTask, Type::PAUSED);
             nowTask = nullptr;
             pause = false;
             break;
         }
-        long long len;
+        unsigned long long len;
         popValue((unsigned char*)recv_buffer, statusCode, 2);
         popValue((unsigned char*) &recv_buffer[2], len, 2);
-        aesDecrypto((unsigned char*)&recv_buffer[4], (unsigned char*) buffer, len);
         fwrite(buffer, 1, len, fp);
         nowTask -> addTransported(len);
         if (statusCode == SERVER_FILE_TRANSPORT) {
             pushValue((unsigned char*) send_buffer, FILE_TRANSPORT, 2);
-            send(file_socket, send_buffer, 2, 0);
+            send(thread_socket, send_buffer, 2, 0);
             continue;
         }
         if (statusCode == SERVER_FILE_FINISHED) {
@@ -185,33 +192,6 @@ void Transporter::cleanBuffer() {
     memset(send_buffer, 0, BUFFER_LENGTH);
     memset(recv_buffer, 0, BUFFER_LENGTH);
     memset(buffer, 0, BUFFER_LENGTH);
-}
-
-void Transporter::aesEncrypto(unsigned char *in, unsigned char *out, int len) {
-    memset(iv, 0, 16);
-    AES_set_encrypt_key(key, AES_KEY_LENGTH, &aesKey);
-    AES_cbc_encrypt(in, out, len, &aesKey, iv, AES_ENCRYPT);
-}
-
-void Transporter::aesDecrypto(unsigned char *in, unsigned char *out, int len) {
-    memset(iv, 0, 16);
-    AES_set_decrypt_key(key, AES_KEY_LENGTH, &aesKey);
-    AES_cbc_encrypt(in, out, len, &aesKey, iv, AES_DECRYPT);
-}
-
-
-void Transporter::pushValue(unsigned char *buffer, const long long &value, const int bytes_len) {
-    for (int i = 1; i <= bytes_len;i++) {
-        buffer[i - 1] = (value >> ((bytes_len - i) * 8)) & 0xff;
-    }
-}
-
-void Transporter::popValue(const unsigned char *buffer, long long &value, const int bytes_len) {
-    value = 0;
-    for (int i = 0; i < bytes_len; i++) {
-        value <<= 8;
-        value |= buffer[i];
-    }
 }
 
 std::string Transporter::getQueueInfo() {
