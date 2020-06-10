@@ -33,7 +33,7 @@ void TaskQueue::addTaskPointer(Task *_task, Type _type) {
 
 void TaskQueue::deleteTask(const int &_index, Type _type) {
     Task *p = nullptr, *t = nullptr;
-    int index = -1;
+    int index = 0;
     if (_type == Type::RUNNING) p = runningTaskHead;
     else p = pauseTaskHead;
 

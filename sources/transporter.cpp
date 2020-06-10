@@ -1,9 +1,10 @@
 #include "transporter.h"
 
-Transporter::Transporter(const unsigned char* _key, const unsigned char *_token) : BaseClass(_key, _token){
+Transporter::Transporter(const unsigned char* _key, const unsigned char *_token, const int &_port) : BaseClass(_key, _token){
     SOCKET _socket;
     WSADATA s;
     nowTask = nullptr;
+    setPort(_port);
     struct sockaddr_in sin;
 
     if (WSAStartup(MAKEWORD(2, 2), &s) != 0) {
@@ -42,6 +43,7 @@ void Transporter::threadInstance() {
 
         if (nowTask ->getType() == taskType::UPLOAD) uploadFile();
         else downloadFile();
+        Sleep(1);
     }
 }
 
@@ -87,6 +89,13 @@ void Transporter::uploadFile() {
             pause = false;
             break;
         }
+        if (stop) {
+            sendStatusCode(FILE_STOP);
+            delete nowTask;
+            nowTask = nullptr;
+            stop = false;
+            break;
+        }
         nextLen = std::min(total - index, ONCE_MAX_LENGTH);
         pushValue((unsigned char*) buffer, FILE_TRANSPORT, 2);
         setToken((unsigned char*) &buffer[2]);
@@ -111,20 +120,20 @@ void Transporter::downloadFile() {
     fp = fopen(nowTask -> destination.c_str(), "ab");
     length = nowTask -> origin.length();
 
-    pushValue((unsigned char*) send_buffer, FILE_DOWNLOAD, 2);
+    pushValue((unsigned char*) buffer, FILE_DOWNLOAD, 2);
     setToken((unsigned char*) &buffer[2]);
     pushValue((unsigned char*) &buffer[34], nowTask -> getCurrent(), 8);
     pushValue((unsigned char*) &buffer[42], length, 2);
     memcpy(&buffer[44], nowTask -> origin.c_str(), length);
-    aesEncrypt((unsigned char*)buffer, (unsigned char*)send_buffer, length);
 
+    aesEncrypt((unsigned char*)buffer, (unsigned char*)send_buffer, BUFFER_LENGTH);
     send(thread_socket, send_buffer, BUFFER_LENGTH, 0);
 
     recv(thread_socket, recv_buffer, BUFFER_LENGTH, 0);
     aesDecrypt((unsigned char*)recv_buffer, (unsigned char*)buffer, BUFFER_LENGTH);
 
     unsigned long long _size;
-    popValue((unsigned char*)&recv_buffer[2], _size, 8);
+    popValue((unsigned char*)&buffer[2], _size, 8);
     nowTask->setSize(_size);
 
     sendStatusCode(FILE_TRANSPORT);
@@ -136,30 +145,40 @@ void Transporter::downloadFile() {
 
         aesDecrypt((unsigned char*)recv_buffer, (unsigned char*)buffer, BUFFER_LENGTH);
 
-        if (pause) {
-            sendStatusCode(FILE_PAUSED);
-            taskQueue.addTaskPointer(nowTask, Type::PAUSED);
-            nowTask = nullptr;
-            pause = false;
-            break;
-        }
         unsigned long long len;
-        popValue((unsigned char*)recv_buffer, statusCode, 2);
-        popValue((unsigned char*) &recv_buffer[2], len, 2);
-        fwrite(buffer, 1, len, fp);
+        popValue((unsigned char*)buffer, statusCode, 2);
+        popValue((unsigned char*) &buffer[2], len, 2);
+        fwrite(&buffer[4], 1, len, fp);
         nowTask -> addTransported(len);
         if (statusCode == SERVER_FILE_TRANSPORT) {
-            pushValue((unsigned char*) send_buffer, FILE_TRANSPORT, 2);
-            send(thread_socket, send_buffer, 2, 0);
+            sendStatusCode(FILE_TRANSPORT);
             continue;
         }
         if (statusCode == SERVER_FILE_FINISHED) {
             delete nowTask;
             nowTask = nullptr;
+            fclose(fp);
+            break;
+        }
+
+        if (pause) {
+            sendStatusCode(FILE_PAUSED);
+            taskQueue.addTaskPointer(nowTask, Type::PAUSED);
+            nowTask = nullptr;
+            pause = false;
+            fclose(fp);
+            break;
+        }
+        if (stop) {
+            sendStatusCode(FILE_STOP);
+            remove(nowTask -> destination.c_str());
+            delete nowTask;
+            nowTask = nullptr;
+            stop = false;
+            fclose(fp);
             break;
         }
     }
-    fclose(fp);
 }
 
 void Transporter::addTask(const Task &_task) {
@@ -204,4 +223,9 @@ std::string Transporter::getQueueInfo() {
 
     res.append(taskQueue.popTaskInfo());
     return res;
+}
+
+
+void Transporter::stopTask() {
+    stop = true;
 }

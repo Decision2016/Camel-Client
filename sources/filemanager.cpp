@@ -91,9 +91,7 @@ std::string FileManager::getNowPath() {
     int length;
     clearBuffer();
 
-    pushValue((unsigned char*)send_buffer, FILE_GET_PATH, 2);
-    aesEncrypt(token, (unsigned char*) &send_buffer[2], TOKEN_LENGTH);
-    send(thread_socket, send_buffer, BUFFER_LENGTH, 0);
+    sendStatusCode(FILE_GET_PATH);
 
     while (true) {
         length = recv(thread_socket, recv_buffer, BUFFER_LENGTH, 0);

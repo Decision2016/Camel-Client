@@ -364,6 +364,9 @@ Window {
 
                     onClickPause: camelClient.pauseTask(clickedIndex)
                     onClickStart: camelClient.startTask(clickedIndex - runningCount)
+                    onClickStop: camelClient.stopTask()
+                    onClickDeleteRunning: camelClient.deleteTask(clickedIndex, true)
+                    onClickDeletePaused: camelClient.deleteTask(clickedIndex - runningCount, false)
                 }
             }
         }

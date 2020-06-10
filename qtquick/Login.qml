@@ -100,17 +100,31 @@ Item {
             }
 
             Button {
-                id: button
-                text: qsTr("Login")
+                id: loginButton
                 topPadding: 6
                 checkable: false
                 Layout.topMargin: 20
+                Layout.minimumHeight: 30
+                Layout.minimumWidth: 100
                 Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
+
+                background: Rectangle {
+                    color: loginButton.down ? "dodgerblue" : "deepskyblue"
+                    radius :2
+                }
 
                 onClicked: {
                     username = usernameEdit.text
                     password = passwordEdit.text
                     clickLogin()
+                }
+
+                contentItem: Text {
+                    text: "登录"
+                    font.bold: true
+                    font.pixelSize: 18
+                    horizontalAlignment: Text.AlignHCenter
+                    color: "white"
                 }
             }
 

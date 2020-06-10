@@ -14,7 +14,7 @@
 
 class Transporter : public BaseClass {
 public:
-    Transporter(const unsigned char* _key, const unsigned char *_token);
+    Transporter(const unsigned char* _key, const unsigned char *_token, const int &_port);
     ~Transporter();
     void threadInstance();
 
@@ -25,6 +25,7 @@ public:
     void deleteTask(const int &_index, Type _type);
     bool checkTask(const Task &_task);
     void pauseNowTask();
+    void stopTask();
 
     std::string getList();
     std::string getQueueInfo();
@@ -33,7 +34,7 @@ private:
     Task* nowTask;
     AES_KEY aesKey;
     char send_buffer[BUFFER_LENGTH], recv_buffer[BUFFER_LENGTH], buffer[BUFFER_LENGTH];
-    bool pause = false, stopThread = false;
+    bool pause = false, stopThread = false, stop = false;
 
     void uploadFile();
     void downloadFile();

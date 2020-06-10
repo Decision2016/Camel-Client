@@ -89,7 +89,7 @@ void camel_client::signUser(QString username, QString password) {
                 filePort = (int)(unsigned char) buffer[0];
                 filePort = (filePort << 8) | (int)(unsigned char) buffer[1];
                 setToken(&buffer[2]);
-                tp = new Transporter(key, token);
+                tp = new Transporter(key, token, filePort);
                 std::thread(&Transporter::threadInstance, tp).detach();
                 client_socket = clientSocket;
                 fm = new FileManager(clientSocket, token, key);
@@ -311,4 +311,14 @@ void camel_client::pauseTask(int _index) {
 
 void camel_client::startTask(int _index) {
     tp -> startTask(_index);
+}
+
+void camel_client::deleteTask(int _index, bool isRunning) {
+    if (_index == 0 && isRunning) return ;
+    if (isRunning) tp -> deleteTask(_index - 1, Type::RUNNING);
+    else tp -> deleteTask(_index, Type::PAUSED);
+}
+
+void camel_client::stopTask() {
+    tp -> stopTask();
 }

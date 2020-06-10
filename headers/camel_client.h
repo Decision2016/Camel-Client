@@ -45,6 +45,8 @@ public slots:
 
     void startTask(int _index);
     void pauseTask(int _index);
+    void stopTask();
+    void deleteTask(int _index, bool isRunning);
 
     QString getDirInfo();
     QString getQueueInfo();

@@ -11,7 +11,8 @@ Item {
     signal clickStart
     signal clickPause
     signal clickStop
-    signal clickDelete
+    signal clickDeleteRunning
+    signal clickDeletePaused
 
     ColumnLayout {
         id: columnLayout5
@@ -158,6 +159,7 @@ Item {
                                 RoundButton {
                                     width: 25
                                     height: 25
+                                    enabled: index === 0 && status === "running"
                                     display: AbstractButton.IconOnly
                                     anchors.verticalCenter: parent.verticalCenter
                                     icon.color: hovered ? "red" : "black"
@@ -167,14 +169,22 @@ Item {
                                         button : "ghostwhite"
                                     }
 
+                                    onClicked: clickStop()
+
                                 }
 
                                 RoundButton {
                                     width: 25
                                     height: 25
+                                    enabled: !(index === 0 && status === "running")
                                     display: AbstractButton.IconOnly
                                     anchors.verticalCenter: parent.verticalCenter
                                     icon.source:  "qrc:/icons/src/close.png"
+                                    onClicked: {
+                                        clickedIndex = index
+                                        if (status === "runnning") clickDeleteRunning()
+                                        else clickDeletePaused()
+                                    }
                                 }
                             }
                         }
