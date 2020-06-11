@@ -8,7 +8,7 @@ import cn.decision01.modules 1.0
 
 import "qrc:/modules"
 
-Window {
+ApplicationWindow {
     property bool hasLogin: false
     property int stackIndex: 0
     property int runningCount
@@ -21,6 +21,9 @@ Window {
     minimumWidth: 1200
     minimumHeight: 741
     flags: Qt.Window | Qt.CustomizeWindowHint
+
+    onClosing: camelClient.closeClient()
+
 
     ListModel {
         id: fileList
@@ -60,6 +63,10 @@ Window {
 
         onRenameSuccess: {
             fileListPage.setIndex()
+            refresh()
+        }
+
+        onDeleteSuccess: {
             refresh()
         }
     }
@@ -162,6 +169,7 @@ Window {
                         onClicked: {
                             columnLayout2.nowObj = 1
                             stackIndex = 1
+                            refresh()
                             queueTimer.running = false
                         }
                     }

@@ -246,6 +246,7 @@ Item {
                                 id: dirNameInput
                                 visible: editIndex == index
                                 width: 120
+                                font.pointSize: 12
                                 horizontalAlignment: Text.AlignHCenter
                                 Keys.onReleased: {
                                     if (event.key !== Qt.Key_Return || text.length <= 0) return ;

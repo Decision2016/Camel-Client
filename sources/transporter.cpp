@@ -3,9 +3,13 @@
 Transporter::Transporter(const unsigned char* _key, const unsigned char *_token, const int &_port) : BaseClass(_key, _token){
     SOCKET _socket;
     WSADATA s;
-    nowTask = nullptr;
-    setPort(_port);
+    std::string ip;
     struct sockaddr_in sin;
+
+    nowTask = nullptr;
+    QSettings settingsread("config.ini",QSettings::IniFormat);
+    ip = settingsread.value("server/ip").toString().toStdString();
+    setPort(_port);
 
     if (WSAStartup(MAKEWORD(2, 2), &s) != 0) {
         // todo: notice error
@@ -20,7 +24,7 @@ Transporter::Transporter(const unsigned char* _key, const unsigned char *_token,
 
     sin.sin_family = AF_INET;
     sin.sin_port = htons(port);
-    sin.sin_addr.S_un.S_addr = inet_addr("127.0.0.1");
+    sin.sin_addr.S_un.S_addr = inet_addr(ip.c_str());
     if ( ::connect(_socket, (struct sockaddr*)&sin, sizeof(sockaddr_in)) == SOCKET_ERROR) {
         //todo: notice error
         closesocket(_socket);
@@ -35,7 +39,10 @@ Transporter::~Transporter() {
 
 void Transporter::threadInstance() {
     while (true) {
-        if (stopThread) break;
+        if (threadStatus) {
+            sendStatusCode(CONNECTION_END);
+            break;
+        }
         if (! taskQueue.empty() && nowTask == nullptr) {
             nowTask = taskQueue.popTask();
         }
@@ -43,7 +50,6 @@ void Transporter::threadInstance() {
 
         if (nowTask ->getType() == taskType::UPLOAD) uploadFile();
         else downloadFile();
-        Sleep(1);
     }
 }
 
@@ -228,4 +234,8 @@ std::string Transporter::getQueueInfo() {
 
 void Transporter::stopTask() {
     stop = true;
+}
+
+void Transporter::stopThread() {
+    threadStatus = true;
 }

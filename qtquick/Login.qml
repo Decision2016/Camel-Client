@@ -40,14 +40,15 @@ Item {
 
 
 
-            TextEdit {
+            TextInput {
                 id: usernameEdit
                 width: 80
                 height: 20
-                textFormat: Text.PlainText
+                text: ""
+                persistentSelection: true
+                cursorVisible: true
+                padding: 10
                 selectByMouse: true
-                topPadding: 15
-                bottomPadding: 15
                 verticalAlignment: Text.AlignBottom
                 Layout.maximumHeight: 40
                 Layout.minimumHeight: 40
@@ -68,8 +69,6 @@ Item {
             Text {
                 id: element
                 text: "Password"
-                topPadding: 15
-                bottomPadding: 15
                 verticalAlignment: Text.AlignVCenter
                 Layout.fillHeight: true
                 Layout.fillWidth: true
@@ -77,10 +76,13 @@ Item {
                 font.pixelSize: 25
             }
 
-            TextEdit {
+            TextInput {
                 id: passwordEdit
                 width: 80
                 height: 20
+                echoMode: TextInput.Password
+                passwordCharacter: "\u25cf"
+                padding: 10
                 selectByMouse: true
                 verticalAlignment: Text.AlignBottom
                 Layout.fillWidth: true
@@ -145,3 +147,9 @@ Item {
         font.pixelSize: 50
     }
 }
+
+/*##^##
+Designer {
+    D{i:0;autoSize:true;height:480;width:640}
+}
+##^##*/

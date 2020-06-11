@@ -2,6 +2,7 @@
 #define CAMEL_CLIENT_H
 
 #include <QObject>
+#include <QSettings>
 #include <qqml.h>
 #include <QDebug>
 #include <winsock2.h>
@@ -15,13 +16,14 @@
 #include <openssl/rsa.h>
 #include <openssl/sha.h>
 #include <openssl/aes.h>
-#include <openssl/rand.h>
 #include <openssl/err.h>
 #include "filemanager.h"
 #include "constants.h"
 #include "task.h"
 #include "transporter.h"
 #include <errno.h>
+
+#include <iostream>
 
 static const int MAX_TIME_WAITING = 300;
 
@@ -70,9 +72,10 @@ private:
     SOCKET client_socket;
     FileManager *fm = nullptr;
     Transporter *tp = nullptr;
+    std::string ip;
     unsigned char token[32], key[32], iv[16];
-    int loginPort, filePort;
-    bool firstConnect = false;
+    int loginPort, filePort, port;
+    bool firstConnect = false, secondConnect = false;
     long long lastTimestamp;
 
     bool vaildUser(QString &username, QString &password);
@@ -81,6 +84,7 @@ private:
     void clearIv();
     void aesEncrypt(const unsigned char* in, unsigned char* out, int len);
     void aesDecrypt(const unsigned char* in, unsigned char* out, int len);
+    void settingInit();
 
     inline void setBufferToken(char *buffer);
     inline bool checkTimeout(long long timeLimit = MAX_TIME_WAITING);

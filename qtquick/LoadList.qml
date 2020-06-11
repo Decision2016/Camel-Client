@@ -18,15 +18,6 @@ Item {
         id: columnLayout5
         anchors.fill: parent
 
-        RowLayout {
-            id: rowLayout4
-            width: 100
-            height: 100
-            Layout.maximumHeight: 50
-            Layout.fillWidth: true
-            Layout.minimumHeight: 50
-        }
-
         ScrollView {
             id: scrollView
             topPadding: 20

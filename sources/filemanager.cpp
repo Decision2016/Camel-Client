@@ -112,7 +112,7 @@ std::string FileManager::getNowPath() {
 }
 
 bool FileManager::rename(QString &_originName, QString &_newName) {
-    std::string nameData = _originName.toStdString() + "/" + _newName.toStdString();
+    std::string nameData = std::string( _originName.toLocal8Bit().data()) + "/" + std::string(_newName.toLocal8Bit().data());
     unsigned long long statusCode;
     int length = nameData.length();
     clearBuffer();

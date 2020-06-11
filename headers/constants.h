@@ -9,8 +9,8 @@ const int KEY_LENGTH = 32;
 const int TOKEN_LENGTH = 32;
 const int IV_LENGTH = 16;
 const int AES_KEY_LENGTH = 256;
-const int BUFFER_LENGTH = 4096;
-const unsigned long long ONCE_MAX_LENGTH = 4048ULL;
+const int BUFFER_LENGTH = 1024;
+const unsigned long long ONCE_MAX_LENGTH = 976ULL;
 
 /*
  * 与服务端交互状态码定义

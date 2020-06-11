@@ -11,6 +11,7 @@
 #include "constants.h"
 #include "baseclass.h"
 #include <string>
+#include <QSettings>
 
 class Transporter : public BaseClass {
 public:
@@ -23,6 +24,7 @@ public:
     void pauseTask(const int &_index);
     void startTask(const int &_index);
     void deleteTask(const int &_index, Type _type);
+    void stopThread();
     bool checkTask(const Task &_task);
     void pauseNowTask();
     void stopTask();
@@ -34,7 +36,7 @@ private:
     Task* nowTask;
     AES_KEY aesKey;
     char send_buffer[BUFFER_LENGTH], recv_buffer[BUFFER_LENGTH], buffer[BUFFER_LENGTH];
-    bool pause = false, stopThread = false, stop = false;
+    bool pause = false, threadStatus = false, stop = false;
 
     void uploadFile();
     void downloadFile();

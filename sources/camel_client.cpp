@@ -21,6 +21,12 @@ camel_client::~camel_client() {
     }
 }
 
+void camel_client::settingInit() {
+    QSettings settingsread("config.ini",QSettings::IniFormat);
+    port = settingsread.value("server/port").toInt();
+    ip = settingsread.value("server/ip").toString().toStdString();
+}
+
 void camel_client::signUser(QString username, QString password) {
     if(! vaildUser(username, password)) return ;
     if (!firstConnect) fnFirstConnect();
@@ -30,32 +36,37 @@ void camel_client::signUser(QString username, QString password) {
     int n, statusCode;
     char send_buffer[BUFFER_LENGTH], recv_buffer[BUFFER_LENGTH], buffer[BUFFER_LENGTH];
 
-    if (WSAStartup(MAKEWORD(2, 2), &s) != 0) {
-        // todo: notice error
-        return ;
-    }
+    if (! secondConnect) {
+        if (WSAStartup(MAKEWORD(2, 2), &s) != 0) {
+            // todo: notice error
+            return ;
+        }
 
-    clientSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-    if (clientSocket == INVALID_SOCKET) {
-        // todo: notice error
-        return ;
-    }
+        clientSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+        if (clientSocket == INVALID_SOCKET) {
+            // todo: notice error
+            return ;
+        }
 
-    sin.sin_family = AF_INET;
-    sin.sin_port = htons(loginPort);
-    sin.sin_addr.S_un.S_addr = inet_addr("127.0.0.1");
-    if ( ::connect(clientSocket, (struct sockaddr*)&sin, sizeof(sockaddr_in)) == SOCKET_ERROR) {
-        //todo: notice error
-        closesocket(clientSocket);
-        return ;
+        sin.sin_family = AF_INET;
+        sin.sin_port = htons(loginPort);
+        sin.sin_addr.S_un.S_addr = inet_addr(ip.c_str());
+        if ( ::connect(clientSocket, (struct sockaddr*)&sin, sizeof(sockaddr_in)) == SOCKET_ERROR) {
+            //todo: notice error
+            closesocket(clientSocket);
+            return ;
+        }
+        client_socket = clientSocket;
+        secondConnect = true;
     }
 
     setStatusCode(SECOND_CONNECT, send_buffer);
 
-    QByteArray t = username.toLocal8Bit();
-    memcpy(buffer, t.data(), USERNAME_LENGTH);
-    t = password.toLocal8Bit();
-    memcpy(&buffer[USERNAME_LENGTH], t.data(), PASSWORD_LENGTH);
+    memset(buffer, 0, BUFFER_LENGTH);
+    std::string t = username.toStdString();
+    memcpy(buffer, t.c_str(), USERNAME_LENGTH);
+    t = password.toStdString();
+    memcpy(&buffer[USERNAME_LENGTH], t.c_str(), PASSWORD_LENGTH);
     unsigned char *pos = (unsigned char*)&buffer[USERNAME_LENGTH + PASSWORD_LENGTH];
 
     BIGNUM* bignum = BN_new();
@@ -77,11 +88,10 @@ void camel_client::signUser(QString username, QString password) {
         ERR_print_errors_fp(stdout);
     }
 
-    send(clientSocket, send_buffer, BUFFER_LENGTH, 0);
-    qDebug() << "login require send";
+    send(client_socket, send_buffer, BUFFER_LENGTH, 0);
 
     while (1) {
-        n = recv(clientSocket, recv_buffer, BUFFER_LENGTH, 0);
+        n = recv(client_socket, recv_buffer, BUFFER_LENGTH, 0);
         if (n != -1) {
             getStatusCode(statusCode, recv_buffer);
             if (statusCode == SERVER_SECOND_CONNECT) {
@@ -91,8 +101,7 @@ void camel_client::signUser(QString username, QString password) {
                 setToken(&buffer[2]);
                 tp = new Transporter(key, token, filePort);
                 std::thread(&Transporter::threadInstance, tp).detach();
-                client_socket = clientSocket;
-                fm = new FileManager(clientSocket, token, key);
+                fm = new FileManager(client_socket, token, key);
                 loginSuccess();
             }
             break;
@@ -107,6 +116,8 @@ void camel_client::fnFirstConnect() {
     int n;
     char send_buffer[BUFFER_LENGTH], recv_buffer[BUFFER_LENGTH];
 
+    settingInit();
+
     if (WSAStartup(MAKEWORD(2, 2), &s) != 0) {
         // todo: notice error
         return ;
@@ -119,8 +130,8 @@ void camel_client::fnFirstConnect() {
     }
 
     sin.sin_family = AF_INET;
-    sin.sin_port = htons(25565);
-    sin.sin_addr.S_un.S_addr = inet_addr("127.0.0.1");
+    sin.sin_port = htons(port);
+    sin.sin_addr.S_un.S_addr = inet_addr(ip.c_str());
     if ( ::connect(clientSocket, (struct sockaddr*)&sin, sizeof(sockaddr_in)) == SOCKET_ERROR) {
         //todo: notice error
         closesocket(clientSocket);
@@ -161,7 +172,7 @@ QString camel_client::getDirInfo() {
     send(client_socket, send_buffer, BUFFER_LENGTH, 0);
 
     while (true) {
-        length = recv(client_socket, recv_buffer, 4096, 0);
+        length = recv(client_socket, recv_buffer, BUFFER_LENGTH, 0);
         if (length == -1) {
             if (checkTimeout(10)) break;
             continue;
@@ -178,7 +189,9 @@ QString camel_client::getDirInfo() {
         }
 
         setStatusCode(RECEIVE_SUCCESS, buffer);
-        aesEncrypt((unsigned char*)buffer, (unsigned char*)send_buffer, 2);
+        memcpy((unsigned char*) &buffer[2], token, TOKEN_LENGTH);
+
+        aesEncrypt((unsigned char*) buffer, (unsigned char*)send_buffer, 34);
         send(client_socket, send_buffer, BUFFER_LENGTH, 0);
     }
 
@@ -190,7 +203,7 @@ void camel_client::setBufferToken(char *buffer) {
 }
 
 bool camel_client::vaildUser(QString &username, QString &password) {
-    if (username.length() > 16 || password.length() > 16)  return false;
+    if (username.length() > 32 || password.length() > 32)  return false;
     return true;
 }
 
@@ -290,8 +303,8 @@ void camel_client::deleteFile(QString _fileName) {
 void camel_client::downloadFile(QString _fileName) {
     std::string fileName = _fileName.toStdString();
     std::string originPath = fm -> getNowPath() + '/' + fileName;
-    std::string destination("./");
-    destination.append(fileName);
+    std::string destination("./download/");
+    destination.append(_fileName.toLocal8Bit().data());
     Task task(taskType::DOWNLOAD, fileName, originPath, destination);
     tp -> addTask(task);
 }
