@@ -30,6 +30,10 @@ Transporter::Transporter(const unsigned char* _key, const unsigned char *_token,
         closesocket(_socket);
         return ;
     }
+
+    int one = 1;
+    setsockopt(_socket, IPPROTO_TCP, TCP_NODELAY, (char*)&one , sizeof(one));
+
     setSocket(_socket);
 }
 
@@ -50,6 +54,7 @@ void Transporter::threadInstance() {
 
         if (nowTask ->getType() == taskType::UPLOAD) uploadFile();
         else downloadFile();
+        Sleep(1);
     }
 }
 
@@ -63,7 +68,7 @@ void Transporter::uploadFile() {
     FILE *fp = fopen(nowTask -> origin.c_str(), "rb");
 
     pushValue((unsigned char*) buffer, FILE_UPLOAD, STATUS_LENGTH);
-    setToken((unsigned char*) &buffer[2]);
+    setToken((unsigned char*) &buffer[STATUS_LENGTH]);
     pushValue((unsigned char*) &buffer[34], index, 8);
     pushValue((unsigned char*) &buffer[42], length, 2);
     memcpy(&buffer[44], nowTask -> destination.c_str(), length);
@@ -72,8 +77,16 @@ void Transporter::uploadFile() {
 
     send(thread_socket, send_buffer, BUFFER_LENGTH, 0);
 
+    clock_t start,ends;
+
     while (true) {
+        start=clock();
         length = recv(thread_socket, recv_buffer, BUFFER_LENGTH, 0);
+        ends=clock();
+        qDebug()<<"接收速度:"<<ends - start<<"ms";
+
+        start=clock();
+
         if (length == -1) {
             continue;
         }
@@ -106,10 +119,19 @@ void Transporter::uploadFile() {
         pushValue((unsigned char*) buffer, FILE_TRANSPORT, 2);
         setToken((unsigned char*) &buffer[2]);
         pushValue((unsigned char*) &buffer[34], nextLen, 2);
-
         fread(&buffer[36], 1, nextLen, fp);
         aesEncrypt((unsigned char*)buffer, (unsigned char*) send_buffer, BUFFER_LENGTH);
+
+        ends=clock();
+        qDebug()<<"处理速度:"<<ends - start<<"ms";
+        start=clock();
+
+
         send(thread_socket, send_buffer, BUFFER_LENGTH, 0);
+
+        ends=clock();
+        qDebug()<<"发送速度:"<<ends - start<<"ms";
+
         index += nextLen;
         nowTask -> addTransported(nextLen);
 

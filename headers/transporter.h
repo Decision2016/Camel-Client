@@ -12,6 +12,8 @@
 #include "baseclass.h"
 #include <string>
 #include <QSettings>
+#include <ctime>
+#include <QtDebug>
 
 class Transporter : public BaseClass {
 public:

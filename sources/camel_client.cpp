@@ -59,7 +59,6 @@ void camel_client::signUser(QString username, QString password) {
         client_socket = clientSocket;
         secondConnect = true;
     }
-
     setStatusCode(SECOND_CONNECT, send_buffer);
 
     memset(buffer, 0, BUFFER_LENGTH);
