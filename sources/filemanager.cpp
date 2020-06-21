@@ -5,10 +5,6 @@ FileManager::FileManager(SOCKET _client, unsigned char* _token, unsigned char* _
 }
 
 bool FileManager::createDirectory(QString _dirName) {
-    /*
-     * 创建过程中可能存在文件名空格问题
-     * 后续调试进行解决
-     */
     unsigned long long statusCode;
     int length;
     sendDirInfo(CREATE_DIR, _dirName);
@@ -20,7 +16,7 @@ bool FileManager::createDirectory(QString _dirName) {
             continue;
         }
         aesDecrypt((unsigned char*)recv_buffer, (unsigned char*)buffer, BUFFER_LENGTH);
-        popValue((unsigned char*)buffer, statusCode, 2);
+        popValue((unsigned char*)buffer, statusCode, STATUS_LENGTH);
         if (statusCode != SERVER_DIR_CREATED) return false;
         else break;
     }
@@ -35,11 +31,10 @@ bool FileManager::deleteDirectory(QString _dirName) {
     while (true) {
         length = recv(thread_socket, recv_buffer, BUFFER_LENGTH, 0);
         if (length == -1) {
-            // todo: 超时检测
             continue;
         }
         aesDecrypt((unsigned char*)recv_buffer, (unsigned char*)buffer, BUFFER_LENGTH);
-        popValue((unsigned char*)buffer, statusCode, 2);
+        popValue((unsigned char*)buffer, statusCode, STATUS_LENGTH);
         if (statusCode != SERVER_DELETE) return false;
         else break;
     }
@@ -54,11 +49,10 @@ bool FileManager::openDirectory(QString _dirName) {
     while (true) {
         length = recv(thread_socket, recv_buffer, BUFFER_LENGTH, 0);
         if (length == -1) {
-            // todo: 超时检测
             continue;
         }
         aesDecrypt((unsigned char*)recv_buffer, (unsigned char*)buffer, BUFFER_LENGTH);
-        popValue((unsigned char*)buffer, statusCode, 2);
+        popValue((unsigned char*)buffer, statusCode, STATUS_LENGTH);
         if (statusCode != SERVER_DIR_INFO) return false;
         else break;
     }
@@ -74,7 +68,6 @@ bool FileManager::backupDirectory() {
     while (true) {
         length = recv(thread_socket, recv_buffer, BUFFER_LENGTH, 0);
         if (length == -1) {
-            // todo: 超时检测
             continue;
         }
         aesDecrypt((unsigned char*)recv_buffer, (unsigned char*)buffer, BUFFER_LENGTH);
@@ -96,13 +89,12 @@ std::string FileManager::getNowPath() {
     while (true) {
         length = recv(thread_socket, recv_buffer, BUFFER_LENGTH, 0);
         if (length == -1) {
-            // todo: 超时检测
             continue;
         }
         aesDecrypt((unsigned char*)recv_buffer, (unsigned char*)buffer, BUFFER_LENGTH);
-        popValue((unsigned char*)buffer, statusCode, 2);
+        popValue((unsigned char*)buffer, statusCode, STATUS_LENGTH);
         if (statusCode != SERVER_FILE_PATH) break;
-        popValue((unsigned char*) &buffer[2], len, 2);
+        popValue((unsigned char*) &buffer[STATUS_LENGTH], len, STATUS_LENGTH);
 
         res.clear();
         for (int i = 0; i < (int)len;i++) res.push_back(buffer[i + 4]);
@@ -117,9 +109,9 @@ bool FileManager::rename(QString &_originName, QString &_newName) {
     int length = nameData.length();
     clearBuffer();
 
-    pushValue((unsigned char*) buffer, RENAME_DIR_FILE, 2);
-    memcpy((unsigned char*) &buffer[2], token, TOKEN_LENGTH);
-    pushValue((unsigned char*) &buffer[34], length, 2);
+    pushValue((unsigned char*) buffer, RENAME_DIR_FILE, STATUS_LENGTH);
+    memcpy((unsigned char*) &buffer[STATUS_LENGTH], token, TOKEN_LENGTH);
+    pushValue((unsigned char*) &buffer[DATA_START], length, 2);
     memcpy(&buffer[36], nameData.c_str(), length);
 
     aesEncrypt((unsigned char*)buffer, (unsigned char*)send_buffer, BUFFER_LENGTH);
@@ -146,7 +138,6 @@ bool FileManager::deleteFile(QString _fileName) {
     while (true) {
         length = recv(thread_socket, recv_buffer, BUFFER_LENGTH, 0);
         if (length == -1) {
-            // todo: 超时检测
             continue;
         }
         aesDecrypt((unsigned char*)recv_buffer, (unsigned char*)buffer, BUFFER_LENGTH);
@@ -169,9 +160,9 @@ void FileManager::sendDirInfo(const int &statusCode, QString _dirName) {
     int length = dirName.length();
 
     pushValue((unsigned char*) buffer, statusCode, STATUS_LENGTH);
-    memcpy((unsigned char*) &buffer[2], token, TOKEN_LENGTH);
+    memcpy((unsigned char*) &buffer[STATUS_LENGTH], token, TOKEN_LENGTH);
 
-    pushValue((unsigned char*) &buffer[34], length, 2);
+    pushValue((unsigned char*) &buffer[DATA_START], length, 2);
     memcpy(&buffer[36], dirName.c_str(), length);
     aesEncrypt((unsigned char*)buffer, (unsigned char*) &send_buffer, BUFFER_LENGTH);
 

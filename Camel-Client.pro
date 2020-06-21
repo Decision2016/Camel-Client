@@ -1,5 +1,7 @@
 QT += quick
 
+RC_ICONS += icon.ico
+
 CONFIG += c++11
 
 # The following define makes your compiler emit warnings if you use
@@ -57,3 +59,5 @@ LIBS +=$$quote(C:/Program Files (x86)/OpenSSL-Win32/lib/libcrypto.lib)
 LIBS +=$$quote(C:/Program Files (x86)/OpenSSL-Win32/lib/libssl.lib)
 
 LIBS += -lWs2_32
+
+QMAKE_MSC_VER = 1900

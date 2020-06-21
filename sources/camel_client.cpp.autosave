@@ -70,7 +70,7 @@ void camel_client::signUser(QString username, QString password) {
 
     BIGNUM* bignum = BN_new();
     BN_set_word(bignum, RSA_F4);
-    RSA_generate_key_ex(client_key, 2048, bignum, NULL);
+    RSA_generate_key_ex(client_key, RSA_KEY_BIT_LENGTH, bignum, NULL);
     BN_free(bignum);
     i2d_RSAPublicKey(client_key, &pos);
 
@@ -80,7 +80,7 @@ void camel_client::signUser(QString username, QString password) {
     SHA256_Update(&sha256, buffer, 302);
     SHA256_Final(hash, &sha256);
     memcpy(&buffer[USERNAME_LENGTH + PASSWORD_LENGTH], hash, SHA256_DIGEST_LENGTH);
-    memcpy(key, hash, 32);
+    memcpy(key, hash, KEY_LENGTH);
 
     int result = RSA_public_encrypt(96,(unsigned char*) buffer, (unsigned char*)&send_buffer[2], server_key, RSA_PKCS1_PADDING);
     if (result < 0) {
@@ -94,7 +94,7 @@ void camel_client::signUser(QString username, QString password) {
         if (n != -1) {
             getStatusCode(statusCode, recv_buffer);
             if (statusCode == SERVER_SECOND_CONNECT) {
-                aesDecrypt((unsigned char*)&recv_buffer[2], (unsigned char*)buffer, 34);
+                aesDecrypt((unsigned char*)&recv_buffer[2], (unsigned char*)buffer, DATA_START);
                 filePort = (int)(unsigned char) buffer[0];
                 filePort = (filePort << 8) | (int)(unsigned char) buffer[1];
                 setToken(&buffer[2]);
@@ -167,7 +167,7 @@ QString camel_client::getDirInfo() {
     setStatusCode(REFRESH_DIR, buffer);
     memcpy((unsigned char*) &buffer[2], token, TOKEN_LENGTH);
 
-    aesEncrypt((unsigned char*) buffer, (unsigned char*)send_buffer, 34);
+    aesEncrypt((unsigned char*) buffer, (unsigned char*)send_buffer, DATA_START);
     send(client_socket, send_buffer, BUFFER_LENGTH, 0);
 
     while (true) {
@@ -190,7 +190,7 @@ QString camel_client::getDirInfo() {
         setStatusCode(RECEIVE_SUCCESS, buffer);
         memcpy((unsigned char*) &buffer[2], token, TOKEN_LENGTH);
 
-        aesEncrypt((unsigned char*) buffer, (unsigned char*)send_buffer, 34);
+        aesEncrypt((unsigned char*) buffer, (unsigned char*)send_buffer, DATA_START);
         send(client_socket, send_buffer, BUFFER_LENGTH, 0);
     }
 
@@ -237,13 +237,13 @@ void camel_client::clearIv() {
 
 void camel_client::aesEncrypt(const unsigned char *in, unsigned char *out, int len) {
     clearIv();
-    AES_set_encrypt_key(key, 256, &aesKey);
+    AES_set_encrypt_key(key, AES_KEY_LENGTH, &aesKey);
     AES_cbc_encrypt(in, out, len, &aesKey, iv, AES_ENCRYPT);
 }
 
 void camel_client::aesDecrypt(const unsigned char *in, unsigned char *out, int len) {
     clearIv();
-    AES_set_decrypt_key(key, 256, &aesKey);
+    AES_set_decrypt_key(key, AES_KEY_LENGTH, &aesKey);
     AES_cbc_encrypt(in, out, len, &aesKey, iv, AES_DECRYPT);
 }
 

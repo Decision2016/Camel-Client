@@ -10,7 +10,11 @@ const int TOKEN_LENGTH = 32;
 const int IV_LENGTH = 16;
 const int AES_KEY_LENGTH = 256;
 const int BUFFER_LENGTH = 1440;
+const int RSA_KEY_LENGTH = 270;
+const int RSA_KEY_BIT_LENGTH = 2048;
+const int DATA_START = 34;
 const unsigned long long ONCE_MAX_LENGTH = 1392ULL;
+
 
 /*
  * 与服务端交互状态码定义
