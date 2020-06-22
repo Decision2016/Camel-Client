@@ -12,7 +12,6 @@ bool FileManager::createDirectory(QString _dirName) {
     while (true) {
         length = recv(thread_socket, recv_buffer, BUFFER_LENGTH, 0);
         if (length == -1) {
-            // todo: 超时检测
             continue;
         }
         aesDecrypt((unsigned char*)recv_buffer, (unsigned char*)buffer, BUFFER_LENGTH);
@@ -104,7 +103,7 @@ std::string FileManager::getNowPath() {
 }
 
 bool FileManager::rename(QString &_originName, QString &_newName) {
-    std::string nameData = std::string( _originName.toLocal8Bit().data()) + "/" + std::string(_newName.toLocal8Bit().data());
+    std::string nameData = std::string( _originName.toStdString()) + "/" + std::string(_newName.toStdString());
     unsigned long long statusCode;
     int length = nameData.length();
     clearBuffer();

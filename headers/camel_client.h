@@ -4,24 +4,23 @@
 #include <QObject>
 #include <QSettings>
 #include <qqml.h>
-#include <QDebug>
-#include <winsock2.h>
-#include <ws2tcpip.h>
-#include <windows.h>
-#include <cstring>
-#include <string>
-#include <ctime>
-#include <thread>
-#include <sys/stat.h>
 #include <openssl/rsa.h>
 #include <openssl/sha.h>
 #include <openssl/aes.h>
 #include <openssl/err.h>
+#include <sys/stat.h>
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#include <windows.h>
+#include <errno.h>
+#include <cstring>
+#include <string>
+#include <ctime>
+#include <thread>
 #include "filemanager.h"
 #include "constants.h"
 #include "task.h"
 #include "transporter.h"
-#include <errno.h>
 
 #include <iostream>
 

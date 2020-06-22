@@ -77,15 +77,8 @@ void Transporter::uploadFile() {
 
     send(thread_socket, send_buffer, BUFFER_LENGTH, 0);
 
-    clock_t start,ends;
-
     while (true) {
-        start=clock();
         length = recv(thread_socket, recv_buffer, BUFFER_LENGTH, 0);
-        ends=clock();
-        qDebug()<<"接收速度:"<<ends - start<<"ms";
-
-        start=clock();
 
         if (length == -1) {
             continue;
@@ -122,15 +115,8 @@ void Transporter::uploadFile() {
         fread(&buffer[36], 1, nextLen, fp);
         aesEncrypt((unsigned char*)buffer, (unsigned char*) send_buffer, BUFFER_LENGTH);
 
-        ends=clock();
-        qDebug()<<"处理速度:"<<ends - start<<"ms";
-        start=clock();
-
 
         send(thread_socket, send_buffer, BUFFER_LENGTH, 0);
-
-        ends=clock();
-        qDebug()<<"发送速度:"<<ends - start<<"ms";
 
         index += nextLen;
         nowTask -> addTransported(nextLen);

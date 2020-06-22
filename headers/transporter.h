@@ -2,18 +2,16 @@
 #define TRANSPORTER_H
 
 #include "task.h"
+#include <QSettings>
 #include <thread>
 #include <openssl/aes.h>
 #include <winsock2.h>
 #include <algorithm>
+#include <string>
+#include <ctime>
 #include "taskqueue.h"
-#include "task.h"
 #include "constants.h"
 #include "baseclass.h"
-#include <string>
-#include <QSettings>
-#include <ctime>
-#include <QtDebug>
 
 class Transporter : public BaseClass {
 public:

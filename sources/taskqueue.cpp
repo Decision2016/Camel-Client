@@ -115,7 +115,7 @@ std::string TaskQueue::popTaskInfo() {
     while (p != nullptr) {
         res.append(p -> popTaskInfo());
         res.push_back('/');
-        res.append("runnning;");
+        res.append("running;");
         p = p -> nextTask;
     }
 
